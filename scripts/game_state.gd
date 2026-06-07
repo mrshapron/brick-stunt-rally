@@ -101,6 +101,9 @@ var cars: Array = []
 var active_car: int = 0
 # car_rewards[str(world)] = true once that world's car has been granted.
 var car_rewards: Dictionary = {}
+# The most recently awarded car (for the congratulations / reveal screen).
+var last_reward_name: String = ""
+var last_reward_design: Array = []
 
 
 func _ready() -> void:
@@ -198,8 +201,10 @@ func try_award_world_car() -> String:
 	car_rewards[str(w)] = true
 	_ensure_cars()
 	cars.append(CarLib.design(2 + w))
+	last_reward_name = CarLib.car_name(2 + w)
+	last_reward_design = CarLib.design(2 + w)
 	_save_garage()
-	return CarLib.car_name(2 + w)
+	return last_reward_name
 
 
 func _save_garage() -> void:

@@ -16,6 +16,7 @@ var enemies_alive: int = 0
 var race: bool = false
 var _bots: Array = []
 var _finish_x: float = 0.0
+var _has_reward: bool = false
 
 
 func _ready() -> void:
@@ -125,7 +126,12 @@ func _process(_delta: float) -> void:
 	elif Input.is_action_just_pressed("restart"):
 		get_tree().reload_current_scene()
 	elif finished and Input.is_action_just_pressed("advance"):
-		_to_world_map()
+		if _has_reward:
+			_has_reward = false
+			Sfx.stop_engine()
+			transition_to("res://scenes/car_reward.tscn")
+		else:
+			_to_world_map()
 
 
 func _to_world_map() -> void:
@@ -194,6 +200,7 @@ func _win() -> void:
 	Sfx.play_finish()
 	var is_best := GameState.record_time(elapsed)
 	var reward := GameState.try_award_world_car()
+	_has_reward = reward != ""
 	if hud:
 		hud.show_complete(elapsed, GameState.get_current_best(), is_best, reward)
 

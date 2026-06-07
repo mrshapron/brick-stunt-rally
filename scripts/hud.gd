@@ -182,6 +182,7 @@ func show_complete(time: float, best: float, is_best: bool, reward: String = "")
 	if is_best:
 		lines += "\nNew best!"
 	if reward != "":
-		lines += "\n\nWORLD COMPLETE!  You won the %s!\nFind it in the Parking lot." % reward
-	lines += "\n\nPress Enter/N to continue   .   R to retry"
+		lines += "\n\nWORLD COMPLETE!  You won the %s!\nPress Enter to see your new car!" % reward
+	else:
+		lines += "\n\nPress Enter/N to continue   .   R to retry"
 	_complete_body.text = lines
