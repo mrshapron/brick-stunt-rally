@@ -192,6 +192,34 @@ func add_hill(cx: float, cz: float, height: float, color: Color) -> float:
 	return height
 
 
+func add_bridge(cx: float, cz: float, length: float, height: float, color: Color) -> void:
+	# A drivable lego overpass: a studded deck with ramps up both ends, side
+	# rails, and end pillars (the centre is left open to drive under).
+	var deck_w := 12.0
+	var ramp_len := height / tan(deg_to_rad(17.0))
+
+	var deck := BrickFactory.make_brick(Vector3(length, 1.2, deck_w), color, "static", true)
+	deck.position = Vector3(cx, height - 0.6, cz)
+	add_child(deck)
+
+	var lr := BrickFactory.make_wedge(Vector3(ramp_len, height, deck_w), color.darkened(0.05))
+	lr.position = Vector3(cx - length * 0.5 - ramp_len * 0.5, height * 0.5 - 0.05, cz)
+	add_child(lr)
+	var rr := BrickFactory.make_wedge(Vector3(ramp_len, height, deck_w), color.darkened(0.05), true)
+	rr.position = Vector3(cx + length * 0.5 + ramp_len * 0.5, height * 0.5 - 0.05, cz)
+	add_child(rr)
+
+	for px in [cx - length * 0.5 + 2.0, cx + length * 0.5 - 2.0]:
+		var pillar := BrickFactory.make_brick(Vector3(1.6, height, 1.6), color.darkened(0.25), "static", false)
+		pillar.position = Vector3(px, height * 0.5, cz)
+		add_child(pillar)
+
+	for sz in [deck_w * 0.5 - 0.3, -(deck_w * 0.5 - 0.3)]:
+		var rail := BrickFactory.make_brick(Vector3(length, 1.0, 0.4), color.lightened(0.1), "static", true)
+		rail.position = Vector3(cx, height + 0.7, cz + sz)
+		add_child(rail)
+
+
 func add_park_decor(half: float, accent: Color) -> void:
 	# Lego park dressing (no collision): lamp posts, flowers, arches, signs, statue.
 	var rng := RandomNumberGenerator.new()

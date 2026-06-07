@@ -28,6 +28,8 @@ func _ready() -> void:
 		f.position = fpos
 		add_child(f)
 
+	add_bridge(0, -12, 38, 4.5, Color("#b0683a"))
+
 	# World portals in a back row, each on a decorated pad.
 	var n := GameState.get_world_count()
 	for i in n:
