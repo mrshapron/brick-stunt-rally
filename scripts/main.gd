@@ -231,5 +231,8 @@ func _on_player_died() -> void:
 	Sfx.stop_engine()
 	Effects.explosion(self, vehicle.global_position + Vector3(0, 1, 0), 2.2)
 	vehicle.visible = false
+	vehicle.set_controlled(false)
+	vehicle.linear_velocity = Vector3.ZERO
+	vehicle.angular_velocity = Vector3.ZERO
 	if hud:
 		hud.show_message("DESTROYED", "Press R to retry   .   M for world map")
