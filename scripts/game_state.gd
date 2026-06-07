@@ -98,6 +98,9 @@ func _ready() -> void:
 func _ensure_cars() -> void:
 	if cars.is_empty():
 		cars = [CarLib.design(0), CarLib.design(1)]
+	elif cars.size() < 2:
+		# Always start with at least two cars.
+		cars.append(CarLib.design(1))
 
 
 func _upgrade_design(d: Array) -> Array:
