@@ -198,11 +198,14 @@ func _win() -> void:
 	running = false
 	Sfx.stop_engine()
 	Sfx.play_finish()
+	var first_clear := not GameState.is_level_complete(GameState.current_world, GameState.current_level)
+	var earned := GameState.money_reward(first_clear)
+	GameState.add_money(earned)
 	var is_best := GameState.record_time(elapsed)
 	var reward := GameState.try_award_world_car()
 	_has_reward = reward != ""
 	if hud:
-		hud.show_complete(elapsed, GameState.get_current_best(), is_best, reward)
+		hud.show_complete(elapsed, GameState.get_current_best(), is_best, reward, earned)
 
 
 func _on_enemy_died() -> void:

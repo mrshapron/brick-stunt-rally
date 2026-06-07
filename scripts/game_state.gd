@@ -118,6 +118,8 @@ var car_rewards: Dictionary = {}
 # The most recently awarded car (for the congratulations / reveal screen).
 var last_reward_name: String = ""
 var last_reward_design: Array = []
+# Currency: earned by finishing levels, spent building cars in the Laboratory.
+var money: int = 250
 
 
 func _ready() -> void:
@@ -221,10 +223,29 @@ func try_award_world_car() -> String:
 	return last_reward_name
 
 
+func add_money(amount: int) -> void:
+	money += amount
+	_save_garage()
+
+
+func spend(amount: int) -> bool:
+	if money >= amount:
+		money -= amount
+		_save_garage()
+		return true
+	return false
+
+
+func money_reward(first_clear: bool) -> int:
+	# Scales with difficulty; big payout the first time, small for replays.
+	var base := 30 + current_world * 15 + current_level * 8
+	return base * 2 if first_clear else maxi(8, int(base / 4.0))
+
+
 func _save_garage() -> void:
 	var f := FileAccess.open(GARAGE_PATH, FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify({"cars": cars, "active": active_car, "rewards": car_rewards}))
+		f.store_string(JSON.stringify({"cars": cars, "active": active_car, "rewards": car_rewards, "money": money}))
 		f.close()
 
 
@@ -240,6 +261,7 @@ func _load_garage() -> void:
 		cars = parsed.get("cars", [])
 		active_car = int(parsed.get("active", 0))
 		car_rewards = parsed.get("rewards", {})
+		money = int(parsed.get("money", 250))
 	elif parsed is Array:
 		# Legacy single-design save.
 		cars = [parsed]

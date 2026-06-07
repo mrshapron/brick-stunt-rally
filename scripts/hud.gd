@@ -18,6 +18,7 @@ var _mute_button: Button
 var _hp_fill: ColorRect
 var _enemies_label: Label
 var _race_label: Label
+var _money_label: Label
 const HP_W: float = 220.0
 
 
@@ -31,6 +32,8 @@ func _ready() -> void:
 	add_child(stats)
 
 	_level_label = _make_label(stats, _level_name, 26)
+	_money_label = _make_label(stats, "$ 0", 24)
+	_money_label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
 	_time_label = _make_label(stats, "Time  0.00", 22)
 	_speed_label = _make_label(stats, "Speed  0 km/h", 22)
 
@@ -152,6 +155,8 @@ func set_level_name(n: String) -> void:
 
 
 func update_hud(elapsed: float, speed_kmh: float, flips: int) -> void:
+	if _money_label:
+		_money_label.text = "$ %d" % GameState.money
 	_time_label.text = "Time  %0.2f" % elapsed
 	_speed_label.text = "Speed  %d km/h" % int(round(speed_kmh))
 	_flip_label.text = "Flips  %d" % flips
@@ -194,12 +199,14 @@ func flash_flip() -> void:
 	_flash_timer = 0.8
 
 
-func show_complete(time: float, best: float, is_best: bool, reward: String = "") -> void:
+func show_complete(time: float, best: float, is_best: bool, reward: String = "", earned: int = 0) -> void:
 	_complete.visible = true
 	var best_txt := "%0.2f" % best if best >= 0.0 else "--"
 	var lines := "Your time: %0.2f s\nBest: %s s" % [time, best_txt]
 	if is_best:
 		lines += "\nNew best!"
+	if earned > 0:
+		lines += "\n\nMoney earned:  +$%d   (total $%d)" % [earned, GameState.money]
 	if reward != "":
 		lines += "\n\nWORLD COMPLETE!  You won the %s!\nPress Enter to see your new car!" % reward
 	else:

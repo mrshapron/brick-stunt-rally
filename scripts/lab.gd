@@ -5,6 +5,7 @@ extends Node3D
 ## you build is used everywhere in the game.
 
 const COLORS := ["#d2473b", "#e6b32e", "#7ab648", "#3b86d2", "#b06bff", "#ff7b29", "#ffffff", "#2b2f36"]
+const COSTS := {"block": 5, "wheel": 20, "rocket": 40}
 const BMIN := Vector3i(-2, 0, -3)
 const BMAX := Vector3i(9, 7, 6)
 
@@ -28,6 +29,7 @@ var _preview: ColorRect
 var _feedback: Label
 var _part: String = "block"
 var _part_label: Label
+var _money_label: Label
 var _original: Array = []
 
 
@@ -57,7 +59,7 @@ func _ready() -> void:
 	add_child(_ghost)
 
 	_original = GameState.get_car_design().duplicate(true)
-	_rebuild_from(_original)
+	_rebuild_from(_original)  # loading existing parts is free
 
 	_camera = Camera3D.new()
 	_camera.fov = 55.0
@@ -152,10 +154,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not mb.pressed:
 			return
 		if mb.button_index == MOUSE_BUTTON_LEFT and _ghost_valid:
-			_place(_ghost_cell, Color(COLORS[_selected]), _part)
+			var cost: int = COSTS.get(_part, 5)
+			if not GameState.spend(cost):
+				if _feedback:
+					_feedback.text = "Need $%d!" % cost
+				return
+			_place(_ghost_cell, Color(COLORS[_selected]), _part, true)
+			_update_money()
 			Sfx.play_hit()
 		elif mb.button_index == MOUSE_BUTTON_RIGHT and _has_hover:
 			_remove(_hover_cell)
+			_update_money()
 			Sfx.play_hit()
 	elif event is InputEventKey:
 		var ke := event as InputEventKey
@@ -168,7 +177,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_select(idx)
 
 
-func _place(cell: Vector3i, color: Color, kind: String) -> void:
+func _place(cell: Vector3i, color: Color, kind: String, paid: bool = false) -> void:
 	if _blocks.has(cell) or not _in_bounds(cell):
 		return
 	var body := StaticBody3D.new()
@@ -177,6 +186,8 @@ func _place(cell: Vector3i, color: Color, kind: String) -> void:
 	body.set_meta("cell", cell)
 	body.set_meta("color", color.to_html(false))
 	body.set_meta("kind", kind)
+	body.set_meta("paid", paid)
+	body.set_meta("cost", int(COSTS.get(kind, 5)))
 
 	body.add_child(_part_visual(kind, color))
 
@@ -238,10 +249,14 @@ func _mat(c: Color) -> StandardMaterial3D:
 	return m
 
 
+func _part_text() -> String:
+	return "Placing: %s  ($%d)" % [_part.to_upper(), int(COSTS.get(_part, 5))]
+
+
 func _set_part(p: String) -> void:
 	_part = p
 	if _part_label:
-		_part_label.text = "Placing: " + _part.to_upper()
+		_part_label.text = _part_text()
 
 
 func _cycle_part() -> void:
@@ -249,13 +264,21 @@ func _cycle_part() -> void:
 	_set_part(order[(order.find(_part) + 1) % order.size()])
 
 
-func _rebuild_from(design: Array) -> void:
+func _clear_blocks() -> void:
 	for cell in _blocks.keys():
-		_blocks[cell].queue_free()
+		var b: Node = _blocks[cell]
+		if b.get_meta("paid", false):
+			GameState.add_money(int(b.get_meta("cost", 0)))
+		b.queue_free()
 	_blocks.clear()
+
+
+func _rebuild_from(design: Array) -> void:
+	_clear_blocks()
 	for v in design:
 		var kind: String = str(v[4]) if v.size() > 4 else "block"
 		_place(Vector3i(int(v[0]), int(v[1]), int(v[2])), Color(str(v[3])), kind)
+	_update_money()
 
 
 func _on_reset() -> void:
@@ -266,8 +289,18 @@ func _on_reset() -> void:
 
 func _remove(cell: Vector3i) -> void:
 	if _blocks.has(cell):
-		_blocks[cell].queue_free()
+		var b: Node = _blocks[cell]
+		# Refund only parts bought this session, so scrapping pre-owned cars
+		# can't farm money.
+		if b.get_meta("paid", false):
+			GameState.add_money(int(b.get_meta("cost", 0)))
+		b.queue_free()
 		_blocks.erase(cell)
+
+
+func _update_money() -> void:
+	if _money_label:
+		_money_label.text = "Money:  $%d" % GameState.money
 
 
 func _collect() -> Array:
@@ -340,8 +373,16 @@ func _build_ui() -> void:
 	col.offset_left = -250.0
 	col.offset_top = 16.0
 	layer.add_child(col)
+	_money_label = Label.new()
+	_money_label.text = "Money:  $%d" % GameState.money
+	_money_label.add_theme_font_size_override("font_size", 26)
+	_money_label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
+	_money_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_money_label.add_theme_constant_override("outline_size", 4)
+	col.add_child(_money_label)
+
 	_part_label = Label.new()
-	_part_label.text = "Placing: BLOCK"
+	_part_label.text = _part_text()
 	_part_label.add_theme_font_size_override("font_size", 24)
 	_part_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	_part_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
@@ -405,9 +446,8 @@ func _on_save() -> void:
 
 
 func _on_clear() -> void:
-	for cell in _blocks.keys():
-		_blocks[cell].queue_free()
-	_blocks.clear()
+	_clear_blocks()
+	_update_money()
 
 
 func _on_drive() -> void:

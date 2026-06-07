@@ -280,6 +280,11 @@ func add_overlay(title: String, hint: String) -> void:
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(title_label)
 
+	var money_label := _overlay_label("$ %d" % GameState.money, 28)
+	money_label.position = Vector2(20, 16)
+	money_label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
+	root.add_child(money_label)
+
 	var hint_label := _overlay_label(hint, 18)
 	hint_label.anchor_left = 0.0
 	hint_label.anchor_right = 1.0
