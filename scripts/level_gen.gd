@@ -168,6 +168,7 @@ static func _generate_race(world: int, level: int, theme: Dictionary) -> Diction
 			"speed": base + rng.randf_range(-1.0, 1.5) + i * 0.2,
 			"lane_z": lanes[i % lanes.size()],
 			"car": i % 8,
+			"shoots": level >= 6,
 		})
 
 	return {

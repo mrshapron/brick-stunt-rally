@@ -58,7 +58,7 @@ func _setup_race(data: Dictionary) -> void:
 	for bd in lanes:
 		var bot := Bot.new()
 		add_child(bot)
-		bot.configure(float(bd.get("speed", 16.0)), _finish_x, int(bd.get("car", 0)), float(bd.get("lane_z", 0.0)))
+		bot.configure(float(bd.get("speed", 16.0)), _finish_x, int(bd.get("car", 0)), float(bd.get("lane_z", 0.0)), bool(bd.get("shoots", false)))
 		_bots.append(bot)
 	if hud:
 		hud.set_race(1, _bots.size() + 1)

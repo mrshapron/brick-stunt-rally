@@ -44,7 +44,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _on_body_entered(body: Node) -> void:
-	if body.is_in_group("enemy"):
+	if body.is_in_group("enemy") or body.is_in_group("racer"):
 		return
 	if body.is_in_group("player") and body.has_method("take_damage"):
 		body.take_damage(damage)

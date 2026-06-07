@@ -366,6 +366,10 @@ func _on_body_entered(body: Node) -> void:
 			var dir := Vector3(linear_velocity.x, 0.0, linear_velocity.z).normalized()
 			var impulse := dir * 6.0 + Vector3(0, 4.0, 0)
 			body.call_deferred("apply_central_impulse", impulse)
+	elif body.is_in_group("racer") and body is Node3D and linear_velocity.length() > 5.0:
+		# Crash into a rival racer.
+		var p: Vector3 = (global_position + (body as Node3D).global_position) * 0.5 + Vector3(0, 0.6, 0)
+		Effects.explosion(get_parent(), p, 0.7, Color(1.0, 0.8, 0.3))
 
 
 func _point_velocity(p: Vector3) -> Vector3:
