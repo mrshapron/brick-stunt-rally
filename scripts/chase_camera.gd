@@ -26,12 +26,16 @@ func _physics_process(delta: float) -> void:
 	var weight := clampf(follow_speed * delta, 0.0, 1.0)
 	global_position = global_position.lerp(desired, weight)
 	look_at(Vector3(tp.x + look_ahead.x, tp.y + look_ahead.y, tp.z), Vector3.UP)
-	_update_occlusion()
+	_update_occlusion(delta)
 
 
-func _update_occlusion() -> void:
-	# Fade anything sitting between the camera and the player so you can always
-	# see the car. Restores objects once they're no longer in the way.
+const FADE_A := 0.25
+const FADE_SPEED := 3.0
+
+
+func _update_occlusion(delta: float) -> void:
+	# Smoothly fade anything between the camera and the player, and fade it back
+	# in once it's clear, so you can always see the car.
 	var space := get_world_3d().direct_space_state
 	if space == null:
 		return
@@ -55,13 +59,31 @@ func _update_occlusion() -> void:
 		var id := col.get_instance_id()
 		occluding[id] = true
 		if not _faded.has(id):
-			_fade(col, id)
+			_begin_fade(col, id)
+
 	for id in _faded.keys():
-		if not occluding.has(id):
-			_restore(id)
+		var entries: Array = _faded[id]
+		var is_occ: bool = occluding.has(id)
+		var done := true
+		for entry in entries:
+			var sm: StandardMaterial3D = entry["m"]
+			if not is_instance_valid(sm):
+				continue
+			var tgt: float = FADE_A if is_occ else entry["a"]
+			var c: Color = sm.albedo_color
+			c.a = move_toward(c.a, tgt, FADE_SPEED * delta)
+			sm.albedo_color = c
+			if is_occ or absf(c.a - entry["a"]) > 0.02:
+				done = false
+		if not is_occ and done:
+			for entry in entries:
+				var sm2: StandardMaterial3D = entry["m"]
+				if is_instance_valid(sm2):
+					sm2.transparency = entry["tr"]
+			_faded.erase(id)
 
 
-func _fade(node: Node, id: int) -> void:
+func _begin_fade(node: Node, id: int) -> void:
 	var raw: Array = []
 	_collect_mats(node, raw)
 	var entries: Array = []
@@ -69,21 +91,7 @@ func _fade(node: Node, id: int) -> void:
 		var sm := m as StandardMaterial3D
 		entries.append({"m": sm, "a": sm.albedo_color.a, "tr": sm.transparency})
 		sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		var c := sm.albedo_color
-		c.a = 0.28
-		sm.albedo_color = c
 	_faded[id] = entries
-
-
-func _restore(id: int) -> void:
-	for entry in _faded[id]:
-		var sm: StandardMaterial3D = entry["m"]
-		if is_instance_valid(sm):
-			var c: Color = sm.albedo_color
-			c.a = entry["a"]
-			sm.albedo_color = c
-			sm.transparency = entry["tr"]
-	_faded.erase(id)
 
 
 func _collect_mats(node: Node, out: Array) -> void:
