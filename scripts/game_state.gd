@@ -90,6 +90,20 @@ const WORLDS: Array = [
 		"dunes": false,
 		"race": true,
 	},
+	{
+		"name": "Safari",
+		"ground": "#c2b25a",
+		"accent": "#8a6a2a",
+		"bricks": ["#d9a441", "#e08a2a", "#7a9e4a"],
+		"sky_top": "#6fa8d8",
+		"sky_horizon": "#ecd9a0",
+		"mountain": "#b09a55",
+		"foliage": "#7a9e3a",
+		"trees": 18,
+		"snow": false,
+		"dunes": false,
+		"safari": true,
+	},
 ]
 
 var current_world: int = 0

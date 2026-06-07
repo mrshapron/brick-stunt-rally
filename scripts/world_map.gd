@@ -29,6 +29,15 @@ func _ready() -> void:
 		bool(theme.get("snow", true)),
 		bool(theme.get("dunes", false)))
 	add_park_decor(maxf(hx, hz), Color(theme.get("accent", "#e6b32e")))
+	if bool(theme.get("safari", false)):
+		var arng := RandomNumberGenerator.new()
+		arng.seed = 33
+		var kinds := ["giraffe", "elephant", "tiger"]
+		for i in 9:
+			var an := Animals.build(kinds[i % kinds.size()])
+			an.position = Vector3(arng.randf_range(-hx * 0.75, hx * 0.75), 0, arng.randf_range(22.0, hz * 0.8))
+			an.rotation.y = arng.randf() * TAU
+			add_child(an)
 
 	# 10 gates laid out as two rows of five, each on a decorated pad.
 	for l in range(1, GameState.LEVELS_PER_WORLD + 1):

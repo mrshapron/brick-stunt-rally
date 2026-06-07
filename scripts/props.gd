@@ -4,6 +4,13 @@ extends RefCounted
 
 
 static func build(p: Dictionary) -> Node3D:
+	if p.get("type", "") == "animal":
+		var a := Animals.build(p.get("animal", "giraffe"))
+		a.position = _v3(p.get("pos", [0, 0, 0]))
+		if p.has("rot"):
+			a.rotation.y = deg_to_rad(float(p["rot"]))
+		return a
+
 	var node: Node3D
 	match p.get("type", ""):
 		"engine":

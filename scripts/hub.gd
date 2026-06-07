@@ -15,11 +15,11 @@ func _ready() -> void:
 	add_light_and_env()
 	add_fade()
 
-	var half := 92.0
+	var half := 112.0
 	add_ground(Vector3(half * 2.0, 3, half * 2.0), Color("#6b7080"), true)
 	add_border(half - 2.0, half - 2.0, Color("#4f5460"))
-	add_skyline(half, half, ["#6fae4f", "#d8a84e", "#19e0c8", "#ff7b29"], 16, 12345)
-	add_scenery(half, Color("#4f7a3f"), Color(0.32, 0.62, 0.28), 24, true, false)
+	add_skyline(half, half, ["#6fae4f", "#d8a84e", "#19e0c8", "#ff7b29"], 18, 12345)
+	add_scenery(half, Color("#4f7a3f"), Color(0.32, 0.62, 0.28), 26, true, false)
 	add_park_decor(half, Color("#e6b32e"))
 
 	# World portals in a back row, each on a decorated pad.
@@ -29,8 +29,8 @@ func _ready() -> void:
 		var done := GameState.levels_completed(i)
 		var color := Color(w.get("accent", "#e6b32e"))
 		var sub := "%d/%d done" % [done, GameState.LEVELS_PER_WORLD]
-		var px := -float(n - 1) * 33.0 * 0.5 + i * 33.0
-		var pos := Vector3(px, 3.5, -56)
+		var px := -float(n - 1) * 30.0 * 0.5 + i * 30.0
+		var pos := Vector3(px, 3.5, -62)
 		add_pad(Vector3(pos.x, 0.15, pos.z), Vector3(13, 0.3, 13), color.darkened(0.15))
 		var gate := make_gate(pos, Vector3(6, 7, 6), color,
 			str(w.get("name", "World")), sub, "portal")

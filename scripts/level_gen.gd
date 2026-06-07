@@ -124,6 +124,22 @@ static func generate(world: int, level: int, theme: Dictionary) -> Dictionary:
 	var fin_len := 24.0
 	bricks.append(_ground(x + fin_len * 0.5, fin_len, ground))
 
+	# Safari world: brick animals lining the road.
+	if theme.get("safari", false):
+		var kinds := ["giraffe", "elephant", "tiger"]
+		var ax := 8.0
+		var ai := 0
+		while ax < x:
+			var az := (DEPTH * 0.5 + 5.0) * (1.0 if (ai % 2 == 0) else -1.0)
+			props.append({
+				"type": "animal",
+				"animal": kinds[ai % kinds.size()],
+				"pos": [ax, 0, az],
+				"rot": 90.0 if az > 0.0 else -90.0,
+			})
+			ax += 24.0
+			ai += 1
+
 	return {
 		"name": "%s  -  Level %d" % [theme.get("name", "World"), level],
 		"spawn": [2, 4, 0],
