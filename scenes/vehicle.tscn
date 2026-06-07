@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://b1stuntcar01"]
+
+[ext_resource type="Script" path="res://scripts/vehicle.gd" id="1_v"]
+
+[sub_resource type="BoxShape3D" id="s_body"]
+size = Vector3(3.2, 1.0, 2)
+
+[node name="Vehicle" type="RigidBody3D"]
+script = ExtResource("1_v")
+
+[node name="Chassis" type="Node3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("s_body")
+
+[node name="Wheels" type="Node3D" parent="."]

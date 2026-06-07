@@ -1,0 +1,28 @@
+; Engine configuration file.
+; Brick Stunt Rally - a 2.5D stunt car game built from studded bricks.
+
+config_version=5
+
+[application]
+
+config/name="Brick Stunt Rally"
+config/description="A 2.5D stunt car game with levels built from studded bricks."
+run/main_scene="res://scenes/hub.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+
+[autoload]
+
+GameState="*res://scripts/game_state.gd"
+Sfx="*res://scripts/sfx.gd"
+
+[debug]
+
+file_logging/enable_file_logging=true
+
+[physics]
+
+3d/default_gravity=14.0
+
+[rendering]
+
+anti_aliasing/quality/msaa_3d=2

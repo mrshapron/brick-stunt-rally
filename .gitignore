@@ -1,0 +1,13 @@
+# Godot 4 editor/import cache
+.godot/
+.import/
+
+# Exports
+export_presets.cfg
+*.exe
+*.pck
+*.zip
+
+# OS junk
+.DS_Store
+Thumbs.db
