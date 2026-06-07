@@ -11,7 +11,7 @@ var _flip_label: Label
 var _flip_flash: Label
 var _flash_timer: float = 0.0
 
-var _complete: PanelContainer
+var _complete: Control
 var _complete_title: Label
 var _complete_body: Label
 var _mute_button: Button
@@ -105,24 +105,43 @@ func _make_label(parent: Node, text: String, size: int) -> Label:
 
 
 func _build_complete_panel() -> void:
-	_complete = PanelContainer.new()
-	_complete.set_anchors_preset(Control.PRESET_CENTER)
+	# Full-screen, dimmed, centered popup used for every level ending.
+	_complete = Control.new()
+	_complete.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_complete.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_complete.visible = false
 	add_child(_complete)
 
-	var margin := MarginContainer.new()
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 28)
-	_complete.add_child(margin)
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0, 0, 0, 0.55)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_complete.add_child(dim)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_complete.add_child(center)
+
+	var panel := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.12, 0.13, 0.2, 0.96)
+	sb.border_color = Color(1.0, 0.82, 0.3, 1.0)
+	sb.set_border_width_all(5)
+	sb.set_corner_radius_all(22)
+	sb.set_content_margin_all(44)
+	panel.add_theme_stylebox_override("panel", sb)
+	center.add_child(panel)
 
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 10)
+	vb.add_theme_constant_override("separation", 18)
 	vb.alignment = BoxContainer.ALIGNMENT_CENTER
-	margin.add_child(vb)
+	panel.add_child(vb)
 
-	_complete_title = _make_label(vb, "LEVEL COMPLETE", 40)
+	_complete_title = _make_label(vb, "LEVEL COMPLETE", 64)
 	_complete_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_complete_body = _make_label(vb, "", 24)
+	_complete_title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	_complete_body = _make_label(vb, "", 32)
 	_complete_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
