@@ -27,12 +27,15 @@ bouncy-castle). I'm pretty proud of where it landed.
   suspension, body lean into corners, and the freedom to roam a wide world.
 - **A hub world you drive around** — no clicky menus. You steer your car into a
   glowing portal, hold for a couple seconds, and it charges up and warps you in.
-- **Four themed worlds**, 10 levels each, getting harder as you go — Grassland,
-  Desert (with proper sand dunes), Neon City, and a **War Zone**. Levels are
-  generated with ramps, gaps, hazards, moving platforms, spinning arms and loops.
+- **Six themed worlds**, 10 levels each, getting harder as you go — Grassland,
+  Desert (with sand dunes), Neon City, a **War Zone**, a **Mountains** climb to
+  the summit, and a **Speedway** where you race AI cars. Levels are generated with
+  ramps, gaps, hazards, moving platforms, spinning arms, loops, falling boulders
+  and more.
 - **Rockets & combat** — roof-mounted launchers fire actual rockets with fire
   trails that explode on impact. Real area blasts that fling bricks around, enemy
   types (drones, turrets, tanks) with health bars, and floating damage numbers.
+- **Racing** — line up against bot cars and fight to cross the line in 1st place.
 - **A Laboratory where you build your own car** brick by brick — pick blocks,
   wheels and rockets, paint them, and drive your creation everywhere.
 - **A Parking lot / garage** — you start with two cars and win a new one every time
@@ -41,11 +44,16 @@ bouncy-castle). I'm pretty proud of where it landed.
   in the car). Press E to get out, wander around, jump with Space, get back in.
 - **Nice scenery** — sun, snow-capped mountains, lego trees, drifting clouds, all
   themed per world.
-- **No external assets.** Every model, every sound, every level is generated in
-  code. The "studded bricks" are deliberately generic — this isn't affiliated with
-  any toy company, just inspired by the joy of clicking bricks together.
+- **Almost no external assets.** Every model, every sound, every level is
+  generated in code (the only asset is the comic UI font). The "studded bricks"
+  are deliberately generic — this isn't affiliated with any toy company, just
+  inspired by the joy of clicking bricks together.
 
 ![The Laboratory - build your own car](screenshots/laboratory.png)
+
+![Racing AI bots on the Speedway](screenshots/race.png)
+
+![Your garage in the Parking lot](screenshots/parking.png)
 
 ![War Zone in the desert](screenshots/warzone.png)
 
@@ -62,17 +70,41 @@ bouncy-castle). I'm pretty proud of where it landed.
 
 There's a **Sound** toggle in the top-right of every screen (it starts muted).
 
-## Running it
+## Installation
 
-You'll need [Godot 4](https://godotengine.org/) (built on 4.6).
+There's nothing to compile and no dependencies to install — the whole game is
+generated in code. You just need Godot.
+
+**1. Install Godot 4** (built on **4.6**, any 4.6+ works):
+
+- Download it from [godotengine.org/download](https://godotengine.org/download), or
+- macOS (Homebrew): `brew install --cask godot`
+- Linux: grab the binary from the site, or use your package manager / Flatpak
+  (`flatpak install flathub org.godotengine.Godot`)
+- Windows: download the `.exe` from the site
+
+**2. Get the game:**
 
 ```bash
-# open it in the editor and press F5
+git clone https://github.com/mrshapron/brick-stunt-rally.git
+cd brick-stunt-rally
+```
+
+**3. Run it:**
+
+```bash
+# Easiest: open the project in the Godot editor and press F5
 godot project.godot
 
-# or just run it
-open -a Godot --args --path .   # macOS
+# Or launch it straight from the command line (from the project folder):
+godot --path .
+
+# macOS, fully detached from the terminal:
+open -a Godot --args --path "$(pwd)"
 ```
+
+The first launch imports the bundled font and builds shader caches, so give it a
+few seconds. That's it — no build step, no package manager, no assets to download.
 
 ## A peek under the hood
 
