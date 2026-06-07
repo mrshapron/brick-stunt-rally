@@ -191,6 +191,8 @@ func _place(cell: Vector3i, color: Color, kind: String) -> void:
 
 
 func _part_visual(kind: String, color: Color) -> Node3D:
+	# Body/rockets are drawn raised and wheels dropped, so the build sits on its
+	# wheels with a little suspension lift - matching how the car looks in-game.
 	if kind == "wheel":
 		var mi := MeshInstance3D.new()
 		var c := CylinderMesh.new()
@@ -200,10 +202,12 @@ func _part_visual(kind: String, color: Color) -> Node3D:
 		c.radial_segments = 16
 		mi.mesh = c
 		mi.rotation_degrees = Vector3(90, 0, 0)
+		mi.position = Vector3(0, -0.22, 0)
 		mi.material_override = _mat(Color(0.1, 0.1, 0.12))
 		return mi
 	elif kind == "rocket":
 		var root := Node3D.new()
+		root.position = Vector3(0, 0.3, 0)
 		var tube := MeshInstance3D.new()
 		var b := BoxMesh.new()
 		b.size = Vector3(0.9, 0.34, 0.34)
@@ -222,6 +226,7 @@ func _part_visual(kind: String, color: Color) -> Node3D:
 	var bm := BoxMesh.new()
 	bm.size = Vector3.ONE * 0.94
 	mb.mesh = bm
+	mb.position = Vector3(0, 0.3, 0)
 	mb.material_override = _mat(color)
 	return mb
 
