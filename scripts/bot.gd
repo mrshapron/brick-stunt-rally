@@ -5,7 +5,7 @@ extends AnimatableBody3D
 ## rockets at the player.
 
 const LANE_STIFF: float = 7.0
-const LANE_DAMP: float = 3.4
+const LANE_DAMP: float = 5.6
 
 var speed: float = 16.0
 var finished: bool = false
@@ -77,7 +77,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var v := 0.0 if finished else speed * _spd_mod
 	_s += v * delta
-	_spd_mod = move_toward(_spd_mod, 1.0, delta * 0.7)
+	_spd_mod = move_toward(_spd_mod, 1.0, delta * 1.5)
 
 	var dir: Vector2 = _track.sample_dir(_s)
 	var perp: Vector2 = _track.perp(dir)
@@ -94,7 +94,7 @@ func _physics_process(delta: float) -> void:
 		var lat := rel.dot(perp)
 		if absf(fwd) < 3.4 and absf(lat) < 3.0:
 			acc += (-signf(lat) if absf(lat) > 0.05 else 1.0) * 26.0
-			_spd_mod = minf(_spd_mod, 0.7)
+			_spd_mod = minf(_spd_mod, 0.85)
 			if _player.has_method("apply_central_impulse"):
 				var pd := Vector3(rel.x, 0.0, rel.y)
 				if pd.length() < 0.1:
@@ -110,8 +110,9 @@ func _physics_process(delta: float) -> void:
 		if absf(fwd2) > 4.2 or absf(lat2) > 4.5:
 			continue
 		if absf(lat2) < 1.9:
+			# Bump sideways only - no speed penalty, so packs don't "accordion"
+			# (bots kept slowing each other and falling back every few seconds).
 			acc += (-signf(lat2) if absf(lat2) > 0.05 else 1.0) * 30.0
-			_spd_mod = minf(_spd_mod, 0.82)
 		elif fwd2 > 0.2 and fwd2 < 3.2:
 			acc += signf(lat2) * 15.0 * _aggr
 

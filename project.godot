@@ -19,6 +19,12 @@ Sfx="*res://scripts/sfx.gd"
 
 file_logging/enable_file_logging=true
 
+[display]
+
+window/handheld/orientation="landscape"
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
 [gui]
 
 theme/custom="res://ui/game_theme.tres"
@@ -29,4 +35,6 @@ theme/custom="res://ui/game_theme.tres"
 
 [rendering]
 
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.mobile="mobile"
 anti_aliasing/quality/msaa_3d=1

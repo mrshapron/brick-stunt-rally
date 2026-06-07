@@ -32,6 +32,16 @@ var _part_label: Label
 var _money_label: Label
 var _original: Array = []
 
+# Touch building: distinguish a tap (place/remove) from a drag (orbit) and a
+# two-finger pinch (zoom). Remove mode lets a tap delete a brick.
+const DRAG_THRESH: float = 12.0
+var _remove_mode: bool = false
+var _remove_button: Button
+var _touches: Dictionary = {}
+var _touch_start: Vector2 = Vector2.ZERO
+var _moved: bool = false
+var _pinch_dist: float = 0.0
+
 
 func _ready() -> void:
 	_setup_world()
@@ -117,13 +127,13 @@ func _update_camera() -> void:
 	_camera.look_at(_center, Vector3.UP)
 
 
-func _update_targets() -> void:
+func _update_targets(screen_pos: Vector2 = Vector2(-1, -1)) -> void:
 	_ghost_valid = false
 	_has_hover = false
 	var space := get_world_3d().direct_space_state
 	if space == null:
 		return
-	var mouse := get_viewport().get_mouse_position()
+	var mouse := screen_pos if screen_pos.x >= 0.0 else get_viewport().get_mouse_position()
 	var from := _camera.project_ray_origin(mouse)
 	var to := from + _camera.project_ray_normal(mouse) * 200.0
 	var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, to))
@@ -148,24 +158,79 @@ func _update_targets() -> void:
 		_hover_cell = col.get_meta("cell")
 
 
+func _toggle_remove() -> void:
+	_remove_mode = not _remove_mode
+	_remove_button.text = "Remove: On" if _remove_mode else "Remove: Off"
+
+
+func _do_place() -> void:
+	var cost: int = COSTS.get(_part, 5)
+	if not GameState.spend(cost):
+		if _feedback:
+			_feedback.text = "Need $%d!" % cost
+		return
+	_place(_ghost_cell, Color(COLORS[_selected]), _part, true)
+	_update_money()
+	Sfx.play_hit()
+
+
+func _do_remove() -> void:
+	_remove(_hover_cell)
+	_update_money()
+	Sfx.play_hit()
+
+
+func _two_finger_dist() -> float:
+	var pts := _touches.values()
+	if pts.size() < 2:
+		return 0.0
+	return (pts[0] as Vector2).distance_to(pts[1] as Vector2)
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
+	if event is InputEventScreenTouch:
+		var t := event as InputEventScreenTouch
+		if t.pressed:
+			_touches[t.index] = t.position
+			if _touches.size() == 1:
+				_touch_start = t.position
+				_moved = false
+			elif _touches.size() == 2:
+				_pinch_dist = _two_finger_dist()
+		else:
+			_touches.erase(t.index)
+			if _touches.is_empty() and not _moved:
+				_update_targets(t.position)
+				if _remove_mode and _has_hover:
+					_do_remove()
+				elif _ghost_valid:
+					_do_place()
+		return
+	elif event is InputEventScreenDrag:
+		var d := event as InputEventScreenDrag
+		_touches[d.index] = d.position
+		if _touches.size() >= 2:
+			var nd := _two_finger_dist()
+			if _pinch_dist > 0.0:
+				_dist = clampf(_dist * (_pinch_dist / maxf(nd, 1.0)), 8.0, 30.0)
+				_update_camera()
+			_pinch_dist = nd
+			_moved = true
+		else:
+			if (d.position - _touch_start).length() > DRAG_THRESH:
+				_moved = true
+			_yaw -= d.relative.x * 0.01
+			_pitch = clampf(_pitch + d.relative.y * 0.01, 0.15, 1.4)
+			_update_camera()
+		return
+	elif event is InputEventMouseButton and not DisplayServer.is_touchscreen_available():
 		var mb := event as InputEventMouseButton
 		if not mb.pressed:
 			return
 		if mb.button_index == MOUSE_BUTTON_LEFT and _ghost_valid:
-			var cost: int = COSTS.get(_part, 5)
-			if not GameState.spend(cost):
-				if _feedback:
-					_feedback.text = "Need $%d!" % cost
-				return
-			_place(_ghost_cell, Color(COLORS[_selected]), _part, true)
-			_update_money()
-			Sfx.play_hit()
+			_do_place()
 		elif mb.button_index == MOUSE_BUTTON_RIGHT and _has_hover:
-			_remove(_hover_cell)
-			_update_money()
-			Sfx.play_hit()
+			_do_remove()
 	elif event is InputEventKey:
 		var ke := event as InputEventKey
 		if ke.pressed and not ke.echo:
@@ -337,7 +402,10 @@ func _build_ui() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.modulate = Color(0.7, 0.85, 1.0)
 
-	var info := _label(root, "Left: place   .   Right: remove   .   Arrows/WASD: rotate   .   1-8: color   .   Tab: switch part (block/wheel/rocket)", 22)
+	var info_text := "Left: place   .   Right: remove   .   Arrows/WASD: rotate   .   1-8: color   .   Tab: switch part"
+	if DisplayServer.is_touchscreen_available():
+		info_text = "Tap: place   .   Drag: rotate   .   Pinch: zoom   .   use Remove to delete   .   pick a color/part below"
+	var info := _label(root, info_text, 22)
 	info.anchor_top = 1.0
 	info.anchor_bottom = 1.0
 	info.anchor_right = 1.0
@@ -401,6 +469,14 @@ func _build_ui() -> void:
 		pb.pressed.connect(_set_part.bind(entry[1]))
 		parts_row.add_child(pb)
 	col.add_child(parts_row)
+
+	_remove_button = Button.new()
+	_remove_button.text = "Remove: Off"
+	_remove_button.custom_minimum_size = Vector2(0, 48)
+	_remove_button.focus_mode = Control.FOCUS_NONE
+	_remove_button.add_theme_font_size_override("font_size", 20)
+	_remove_button.pressed.connect(_toggle_remove)
+	col.add_child(_remove_button)
 
 	_preview = ColorRect.new()
 	_preview.custom_minimum_size = Vector2(230, 34)

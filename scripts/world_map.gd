@@ -70,6 +70,7 @@ func _ready() -> void:
 	spawn_car(Vector3(-56, 3, 44))
 	add_camera()
 	add_overlay("%s" % theme.get("name", "World"), "Drive into a level gate and hold for 2s to play (or press Enter)   .   M = hub")
+	add_touch_controls("nav")
 
 
 func _on_near(body: Node, gate: Node3D, level: int, unlocked: bool) -> void:

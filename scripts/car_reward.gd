@@ -55,6 +55,7 @@ func _ready() -> void:
 	_update_cam()
 
 	_build_ui()
+	add_touch_controls("nav")
 
 
 func _process(delta: float) -> void:

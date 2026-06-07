@@ -45,6 +45,7 @@ func _ready() -> void:
 	add_camera()
 	_setup_hud(data.get("name", "Level"))
 	_setup_pause_menu()
+	add_touch_controls("car", true)
 
 	combat = data.get("combat", false)
 	if combat:

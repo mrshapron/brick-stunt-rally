@@ -64,6 +64,7 @@ func _ready() -> void:
 	hint.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	hint.position = Vector2(20, -40)
 	hint.modulate = Color(1, 1, 1, 0.75)
+	hint.visible = not DisplayServer.is_touchscreen_available()
 
 	_flip_flash = _make_label(self, "FLIP!", 64)
 	_flip_flash.set_anchors_preset(Control.PRESET_CENTER_TOP)

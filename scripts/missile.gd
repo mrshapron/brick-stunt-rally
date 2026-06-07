@@ -105,12 +105,13 @@ func _build_rocket() -> void:
 	fire.mesh = fm
 	add_child(fire)
 
-	var glow := OmniLight3D.new()
-	glow.position = Vector3(-0.4, 0, 0)
-	glow.omni_range = 5.0
-	glow.light_energy = 2.5
-	glow.light_color = Color(1.0, 0.6, 0.2)
-	add_child(glow)
+	if Mobile.explosion_light():
+		var glow := OmniLight3D.new()
+		glow.position = Vector3(-0.4, 0, 0)
+		glow.omni_range = 5.0
+		glow.light_energy = 2.5
+		glow.light_color = Color(1.0, 0.6, 0.2)
+		add_child(glow)
 
 
 func _physics_process(delta: float) -> void:

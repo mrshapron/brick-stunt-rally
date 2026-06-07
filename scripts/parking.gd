@@ -67,6 +67,7 @@ func _ready() -> void:
 	add_child(camera)
 
 	add_overlay("PARKING", "Walk up to a car and press E to drive it   .   Space to jump   .   M = hub")
+	add_touch_controls("nav")
 
 
 func _slab(pos: Vector3, size: Vector3, color: Color) -> void:

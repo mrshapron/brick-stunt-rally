@@ -8,14 +8,15 @@ static func explosion(host: Node, pos: Vector3, scale: float = 1.0, color: Color
 	if host == null or not host.is_inside_tree():
 		return
 
-	# Fireball: bright fast chunks.
-	var fire := _burst(host, pos, int(34 * scale), 0.55, color, 6.0 * scale, 16.0 * scale, Vector3(0, -10, 0), 0.5 * scale, 1.6 * scale, 3.0)
+	# Fireball: bright fast chunks (fewer particles on mobile).
+	var ps := Mobile.particle_scale()
+	var fire := _burst(host, pos, int(34 * scale * ps), 0.55, color, 6.0 * scale, 16.0 * scale, Vector3(0, -10, 0), 0.5 * scale, 1.6 * scale, 3.0)
 	fire.spread = 180.0
 	# Hot yellow core.
-	var core := _burst(host, pos, int(16 * scale), 0.4, Color(1.0, 0.95, 0.5), 8.0 * scale, 20.0 * scale, Vector3(0, -6, 0), 0.4 * scale, 1.0 * scale, 4.0)
+	var core := _burst(host, pos, int(16 * scale * ps), 0.4, Color(1.0, 0.95, 0.5), 8.0 * scale, 20.0 * scale, Vector3(0, -6, 0), 0.4 * scale, 1.0 * scale, 4.0)
 	core.spread = 180.0
 	# Rising smoke.
-	var smoke := _burst(host, pos + Vector3(0, 0.5, 0), int(18 * scale), 1.2, Color(0.2, 0.19, 0.18, 0.55), 1.5 * scale, 4.0 * scale, Vector3(0, 1.5, 0), 1.0 * scale, 2.4 * scale, 0.0)
+	var smoke := _burst(host, pos + Vector3(0, 0.5, 0), int(18 * scale * ps), 1.2, Color(0.2, 0.19, 0.18, 0.55), 1.5 * scale, 4.0 * scale, Vector3(0, 1.5, 0), 1.0 * scale, 2.4 * scale, 0.0)
 	smoke.spread = 50.0
 	smoke.direction = Vector3(0, 1, 0)
 
@@ -42,14 +43,15 @@ static func explosion(host: Node, pos: Vector3, scale: float = 1.0, color: Color
 	tw.tween_property(rmat, "albedo_color:a", 0.0, 0.35)
 	tw.finished.connect(ring.queue_free)
 
-	# Bright flash light.
-	var light := OmniLight3D.new()
-	host.add_child(light)
-	light.global_position = pos
-	light.omni_range = 18.0 * scale
-	light.light_energy = 9.0
-	light.light_color = color
-	host.get_tree().create_timer(0.2).timeout.connect(light.queue_free)
+	# Bright flash light (skipped on mobile to respect light limits).
+	if Mobile.explosion_light():
+		var light := OmniLight3D.new()
+		host.add_child(light)
+		light.global_position = pos
+		light.omni_range = 18.0 * scale
+		light.light_energy = 9.0
+		light.light_color = color
+		host.get_tree().create_timer(0.2).timeout.connect(light.queue_free)
 
 	Sfx.play_explosion()
 

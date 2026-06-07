@@ -195,7 +195,7 @@ func _make_wheel_mesh(ray: RayCast3D) -> MeshInstance3D:
 
 func _setup_dust() -> void:
 	_dust = CPUParticles3D.new()
-	_dust.amount = 24
+	_dust.amount = int(24 * Mobile.particle_scale())
 	_dust.lifetime = 0.7
 	_dust.position = Vector3(-1.4, -0.45, 0)
 	_dust.emitting = false

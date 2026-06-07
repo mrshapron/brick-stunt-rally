@@ -87,6 +87,7 @@ func _ready() -> void:
 	spawn_car(Vector3(0, 3, 8))
 	add_camera()
 	add_overlay("WORLD HUB", "Drive into a world portal and hold for 2s to enter (or press Enter)")
+	add_touch_controls("nav")
 
 
 func _on_near(body: Node, gate: Node3D, world_index: int) -> void:

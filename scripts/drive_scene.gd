@@ -10,9 +10,18 @@ var vehicle: Vehicle
 var camera: ChaseCamera
 var character: Character
 var on_foot: bool = false
+var touch: CanvasLayer
+var _touch_gameplay: bool = false
 var _prompt_label: Label
 var _fade: ColorRect
 var _transitioning: bool = false
+
+
+func add_touch_controls(mode: String, gameplay: bool = false) -> void:
+	_touch_gameplay = gameplay
+	touch = preload("res://scripts/touch_controls.gd").new()
+	touch._mode = mode
+	add_child(touch)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -34,6 +43,8 @@ func _exit_car() -> void:
 	character.global_position = vehicle.global_position + vehicle.global_transform.basis.z * 2.4 + Vector3(0, 0.6, 0)
 	if camera:
 		camera.target = character
+	if _touch_gameplay and is_instance_valid(touch):
+		touch.set_mode("foot")
 	set_prompt("Walk up to the car and press E to get in   .   Space to jump")
 	Sfx.play_checkpoint()
 
@@ -51,6 +62,8 @@ func _enter_car() -> void:
 		camera.target = vehicle
 	character.queue_free()
 	character = null
+	if _touch_gameplay and is_instance_valid(touch):
+		touch.set_mode("car")
 	set_prompt("")
 	Sfx.play_checkpoint()
 
@@ -65,7 +78,7 @@ func add_light_and_env(sky_top: Color = Color(0.28, 0.5, 0.86), sky_horizon: Col
 	# Single-split orthogonal shadows over a limited distance: much cheaper than
 	# the default 4-split cascade across the whole huge studded baseplate.
 	light.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	light.directional_shadow_max_distance = 70.0
+	light.directional_shadow_max_distance = Mobile.shadow_distance()
 	add_child(light)
 
 	var sky_mat := ProceduralSkyMaterial.new()
@@ -84,7 +97,7 @@ func add_light_and_env(sky_top: Color = Color(0.28, 0.5, 0.86), sky_horizon: Col
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_energy = 1.05
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.glow_enabled = true
+	env.glow_enabled = Mobile.glow_enabled()
 	env.glow_intensity = 0.35
 	# SSAO is GPU-expensive for a subtle effect; off keeps the Mac cooler.
 	env.ssao_enabled = false
@@ -348,6 +361,7 @@ func add_overlay(title: String, hint: String) -> void:
 	hint_label.offset_bottom = -16.0
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.modulate = Color(1, 1, 1, 0.8)
+	hint_label.visible = not DisplayServer.is_touchscreen_available()
 	root.add_child(hint_label)
 
 	_prompt_label = _overlay_label("", 30)

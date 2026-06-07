@@ -77,7 +77,7 @@ static func _make_studs(size: Vector3, color: Color) -> MultiMeshInstance3D:
 	cyl.top_radius = STUD_RADIUS
 	cyl.bottom_radius = STUD_RADIUS
 	cyl.height = STUD_HEIGHT
-	cyl.radial_segments = 8
+	cyl.radial_segments = Mobile.stud_segments()
 	var smat := StandardMaterial3D.new()
 	smat.albedo_color = color.lightened(0.08)
 	smat.roughness = 0.5
