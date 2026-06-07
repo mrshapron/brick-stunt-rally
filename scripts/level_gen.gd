@@ -199,7 +199,8 @@ static func _generate_climb(world: int, level: int, theme: Dictionary) -> Dictio
 	var props: Array = []
 	var checkpoints: Array = []
 
-	var angle := 26.0
+	# Gentle slopes early, steeper later - but always climbable for the car.
+	var angle := lerpf(19.0, 25.0, ld)
 	var tan_a := tan(deg_to_rad(angle))
 	var x := -8.0
 	var base := 0.0
@@ -208,42 +209,36 @@ static func _generate_climb(world: int, level: int, theme: Dictionary) -> Dictio
 	bricks.append(_plateau(x + start_len * 0.5, start_len, base, ground))
 	x += start_len
 
-	var hills := 3 + int(round(ld * 5.0))
-	for i in hills:
-		var h := lerpf(4.0, 9.5, ld) * rng.randf_range(0.85, 1.12)
+	# The mountain climbs continuously: each ramp lifts to a higher plateau.
+	var steps := 4 + int(round(ld * 5.0))
+	for i in steps:
+		var h := lerpf(3.5, 7.0, ld) * rng.randf_range(0.9, 1.15)
 		var up_len := h / tan_a
 		bricks.append(_wedge(x + up_len * 0.5, base, up_len, h, accent, false))
 		x += up_len
+		base += h
 
-		var top := base + h
-		var plen := rng.randf_range(11.0, 17.0)
-		bricks.append(_plateau(x + plen * 0.5, plen, top, ground))
+		var plen := rng.randf_range(10.0, 15.0)
+		bricks.append(_plateau(x + plen * 0.5, plen, base, ground))
 		var pmid := x + plen * 0.5
 
-		if rng.randf() < 0.6:
-			bricks.append_array(_stack_at(pmid, rng.randf_range(-7.0, 7.0), top, 2 + int(ld * 3.0), brick_cols, rng))
-		# Things falling from the sky onto the peak.
+		if rng.randf() < 0.55:
+			bricks.append_array(_stack_at(pmid, rng.randf_range(-7.0, 7.0), base, 2 + int(ld * 3.0), brick_cols, rng))
+		# Boulders tumbling down from higher up the mountain.
 		if level >= 2 and rng.randf() < 0.7:
 			props.append({
 				"type": "faller",
-				"pos": [pmid, top + 1.0, 0],
+				"pos": [pmid, base + 1.0, 0],
 				"interval": lerpf(2.2, 1.0, ld),
-				"width": plen * 0.8,
+				"width": plen * 0.85,
 				"height": 22.0,
 				"color": "#6f7d6a",
 			})
+		checkpoints.append({"pos": [x + plen - 4.0, base + 2.5, 0], "size": [2, 6, DEPTH]})
 		x += plen
 
-		var down_len := h / tan_a
-		bricks.append(_wedge(x + down_len * 0.5, base, down_len, h, accent, true))
-		x += down_len
-
-		var flen := rng.randf_range(12.0, 18.0)
-		bricks.append(_plateau(x + flen * 0.5, flen, base, ground))
-		checkpoints.append({"pos": [x + flen - 4.0, base + 2.5, 0], "size": [2, 6, DEPTH]})
-		x += flen
-
-	var fin_len := 22.0
+	# Summit with the finish gate at the very top.
+	var fin_len := 20.0
 	bricks.append(_plateau(x + fin_len * 0.5, fin_len, base, ground))
 
 	return {
@@ -253,7 +248,7 @@ static func _generate_climb(world: int, level: int, theme: Dictionary) -> Dictio
 		"loops": [],
 		"props": props,
 		"checkpoints": checkpoints,
-		"finish": {"pos": [x + fin_len * 0.6, 3, 0], "size": [2.5, 8, DEPTH]},
+		"finish": {"pos": [x + fin_len * 0.6, base + 3.0, 0], "size": [2.5, 8, DEPTH]},
 		"sky_top": theme.get("sky_top", "#5a86c0"),
 		"sky_horizon": theme.get("sky_horizon", "#dfeaf2"),
 	}
