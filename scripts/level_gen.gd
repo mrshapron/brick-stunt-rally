@@ -209,7 +209,7 @@ static func _generate_climb(world: int, level: int, theme: Dictionary) -> Dictio
 
 
 static func _plateau(cx: float, length: float, top_y: float, color: String) -> Dictionary:
-	return {"size": [length, 3, DEPTH], "pos": [cx, top_y - 1.5, 0], "color": color, "kind": "static"}
+	return {"size": [length, 3, DEPTH], "pos": [cx, top_y - 1.5, 0], "color": color, "kind": "static", "road": true}
 
 
 static func _wedge(cx: float, base_y: float, length: float, height: float, color: String, flip: bool) -> Dictionary:
@@ -292,7 +292,7 @@ static func _engine(cx: float, cz: float, color: String) -> Dictionary:
 
 
 static func _ground(cx: float, length: float, color: String) -> Dictionary:
-	return {"size": [length, 3, DEPTH], "pos": [cx, -1.5, 0], "color": color, "kind": "static"}
+	return {"size": [length, 3, DEPTH], "pos": [cx, -1.5, 0], "color": color, "kind": "static", "road": true}
 
 
 static func _ramp(cx: float, ang_deg: float, length: float, color: String) -> Dictionary:

@@ -50,7 +50,38 @@ func _build_brick(b: Dictionary) -> void:
 	brick.position = _v3(b.get("pos", [0, 0, 0]))
 	if b.has("rot"):
 		brick.rotation.z = deg_to_rad(float(b["rot"]))
+	if b.get("road", false):
+		_add_road_markings(brick, size)
 	add_child(brick)
+
+
+func _add_road_markings(brick: Node3D, size: Vector3) -> void:
+	# Flat painted tiles laid on top of the studs: a dashed yellow centre line and
+	# white lane edges. Lego-flavoured "road" look (visual only).
+	var top := size.y * 0.5 + 0.26
+	var half_len := size.x * 0.5
+
+	var x := -half_len + 1.2
+	while x < half_len - 0.6:
+		_add_marking(brick, Vector3(x, top, 0), Vector3(1.5, 0.12, 0.5), Color(0.95, 0.82, 0.2))
+		x += 3.2
+
+	var edge := size.z * 0.5 - 1.2
+	for sz in [edge, -edge]:
+		_add_marking(brick, Vector3(0, top, sz), Vector3(size.x * 0.98, 0.12, 0.35), Color(0.92, 0.92, 0.94))
+
+
+func _add_marking(brick: Node3D, pos: Vector3, msize: Vector3, color: Color) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = msize
+	mi.mesh = bm
+	mi.position = pos
+	var m := StandardMaterial3D.new()
+	m.albedo_color = color
+	m.roughness = 0.6
+	mi.material_override = m
+	brick.add_child(mi)
 
 
 func _build_loop(loop: Dictionary) -> void:
