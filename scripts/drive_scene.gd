@@ -120,6 +120,61 @@ func add_scenery(half: float, mountain: Color = Color(0.34, 0.46, 0.32), leaf: C
 		_cloud(Vector3(rng.randf_range(-half, half), rng.randf_range(40.0, 62.0), rng.randf_range(-half, half)), rng)
 
 
+func add_city(half: float, building_colors: Array) -> void:
+	# A lego-city look: windowed buildings around the edges, two cross streets
+	# with painted lines, and a few speed bumps. Keeps the portal row clear.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 909
+	for i in 13:
+		var ang := TAU * float(i) / 13.0 + rng.randf() * 0.25
+		var rad := half * rng.randf_range(0.6, 0.85)
+		var pos := Vector3(cos(ang) * rad, 0, sin(ang) * rad)
+		if pos.z < -42.0:
+			continue
+		var w := rng.randf_range(6.0, 10.0)
+		var d := rng.randf_range(6.0, 10.0)
+		var h := rng.randf_range(10.0, 26.0)
+		var col := Color(building_colors[rng.randi() % building_colors.size()])
+		var win := Color(0.95, 0.85, 0.4) if rng.randf() < 0.6 else Color(0.45, 0.8, 1.0)
+		var b := Decor.building(w, d, h, col, win)
+		b.position = pos
+		add_child(b)
+
+	_road_strip(half * 1.2, 10.0, false)
+	_road_strip(half * 1.2, 10.0, true)
+
+	for s in [-34.0, 34.0, -66.0, 66.0]:
+		var sb := Decor.speed_bump(9.0)
+		sb.position = Vector3(s, 0, 0)
+		add_child(sb)
+	for s2 in [-34.0, 34.0]:
+		var sb2 := Decor.speed_bump(9.0)
+		sb2.position = Vector3(0, 0, s2)
+		sb2.rotation.y = PI * 0.5
+		add_child(sb2)
+
+
+func _road_strip(length: float, width: float, along_z: bool) -> void:
+	var asphalt := Vector3(width, 0.12, length) if along_z else Vector3(length, 0.12, width)
+	_flat_box(Vector3(0, 0.06, 0), asphalt, Color(0.16, 0.16, 0.18))
+	var n := int(length / 4.0)
+	for i in range(-n / 2, n / 2):
+		var p := float(i) * 4.0
+		var dpos := Vector3(0, 0.13, p) if along_z else Vector3(p, 0.13, 0)
+		var dsize := Vector3(0.4, 0.06, 1.8) if along_z else Vector3(1.8, 0.06, 0.4)
+		_flat_box(dpos, dsize, Color(0.9, 0.82, 0.3))
+
+
+func _flat_box(pos: Vector3, size: Vector3, color: Color) -> void:
+	var mi := MeshInstance3D.new()
+	var b := BoxMesh.new()
+	b.size = size
+	mi.mesh = b
+	mi.position = pos
+	mi.material_override = _flat(color)
+	add_child(mi)
+
+
 func add_park_decor(half: float, accent: Color) -> void:
 	# Lego park dressing (no collision): lamp posts, flowers, arches, signs, statue.
 	var rng := RandomNumberGenerator.new()

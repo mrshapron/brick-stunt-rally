@@ -18,8 +18,8 @@ func _ready() -> void:
 	var half := 112.0
 	add_ground(Vector3(half * 2.0, 3, half * 2.0), Color("#6b7080"), true)
 	add_border(half - 2.0, half - 2.0, Color("#4f5460"))
-	add_skyline(half, half, ["#6fae4f", "#d8a84e", "#19e0c8", "#ff7b29"], 18, 12345)
-	add_scenery(half, Color("#4f7a3f"), Color(0.32, 0.62, 0.28), 26, true, false)
+	add_city(half, ["#c64b3a", "#3b86d2", "#e6b32e", "#5aa54a", "#b06bff", "#e08a2a", "#cfd2da"])
+	add_scenery(half, Color("#4f7a3f"), Color(0.32, 0.62, 0.28), 22, true, false)
 	add_park_decor(half, Color("#e6b32e"))
 
 	# World portals in a back row, each on a decorated pad.

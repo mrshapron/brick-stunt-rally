@@ -51,6 +51,51 @@ static func statue(colors: Array) -> Node3D:
 	return r
 
 
+static func building(w: float, d: float, h: float, color: Color, win: Color) -> Node3D:
+	# A collidable lego tower block with a window grid and a roof cap.
+	var body := StaticBody3D.new()
+	_box(body, Vector3(w, h, d), Vector3(0, h * 0.5, 0), color)
+	_box(body, Vector3(w * 1.06, 0.7, d * 1.06), Vector3(0, h + 0.2, 0), color.darkened(0.3))
+	var cs := CollisionShape3D.new()
+	var sh := BoxShape3D.new()
+	sh.size = Vector3(w, h, d)
+	cs.shape = sh
+	cs.position = Vector3(0, h * 0.5, 0)
+	body.add_child(cs)
+
+	var yy := 2.2
+	while yy < h - 1.6:
+		var xx := -w * 0.5 + 1.4
+		while xx < w * 0.5 - 0.8:
+			_box(body, Vector3(0.7, 0.9, 0.12), Vector3(xx, yy, d * 0.5 + 0.06), win, 1.6)
+			_box(body, Vector3(0.7, 0.9, 0.12), Vector3(xx, yy, -d * 0.5 - 0.06), win, 1.6)
+			xx += 2.4
+		var zz := -d * 0.5 + 1.4
+		while zz < d * 0.5 - 0.8:
+			_box(body, Vector3(0.12, 0.9, 0.7), Vector3(w * 0.5 + 0.06, yy, zz), win, 1.6)
+			_box(body, Vector3(0.12, 0.9, 0.7), Vector3(-w * 0.5 - 0.06, yy, zz), win, 1.6)
+			zz += 2.4
+		yy += 3.4
+	return body
+
+
+static func speed_bump(length: float, color: Color = Color(0.9, 0.78, 0.25)) -> Node3D:
+	# A low collidable strip the car bumps over (runs along Z).
+	var body := StaticBody3D.new()
+	_box(body, Vector3(1.6, 0.4, length), Vector3(0, 0.2, 0), color)
+	var cs := CollisionShape3D.new()
+	var sh := BoxShape3D.new()
+	sh.size = Vector3(1.6, 0.4, length)
+	cs.shape = sh
+	cs.position = Vector3(0, 0.2, 0)
+	body.add_child(cs)
+	var z := -length * 0.5 + 1.0
+	while z < length * 0.5 - 0.5:
+		_box(body, Vector3(1.7, 0.06, 0.8), Vector3(0, 0.41, z), Color(0.1, 0.1, 0.12))
+		z += 1.8
+	return body
+
+
 static func _box(parent: Node, size: Vector3, pos: Vector3, color: Color, emissive: float = 0.0) -> void:
 	var mi := MeshInstance3D.new()
 	var b := BoxMesh.new()
