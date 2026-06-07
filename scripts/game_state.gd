@@ -155,7 +155,11 @@ func get_cars() -> Array:
 
 func get_car_design() -> Array:
 	_ensure_cars()
-	return cars[clampi(active_car, 0, cars.size() - 1)]
+	var d: Array = cars[clampi(active_car, 0, cars.size() - 1)]
+	if d == null or d.is_empty():
+		# Never hand back an empty car (would build an invisible vehicle).
+		return CarLib.design(0)
+	return d
 
 
 func set_car_design(design: Array) -> void:

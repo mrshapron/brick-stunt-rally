@@ -389,7 +389,12 @@ func _label(parent: Node, text: String, size: int) -> Label:
 
 
 func _on_save() -> void:
-	GameState.set_car_design(_collect())
+	var d := _collect()
+	if d.is_empty():
+		if _feedback:
+			_feedback.text = "Add some bricks first!"
+		return
+	GameState.set_car_design(d)
 	if _feedback:
 		_feedback.text = "Saved!"
 
@@ -401,7 +406,12 @@ func _on_clear() -> void:
 
 
 func _on_drive() -> void:
-	GameState.set_car_design(_collect())
+	var d := _collect()
+	if d.is_empty():
+		if _feedback:
+			_feedback.text = "Add some bricks first!"
+		return
+	GameState.set_car_design(d)
 	get_tree().change_scene_to_file("res://scenes/hub.tscn")
 
 
