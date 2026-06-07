@@ -60,7 +60,7 @@ func _ready() -> void:
 	_race_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.4))
 	_flip_label = _make_label(stats, "Flips  0", 22)
 
-	var hint := _make_label(self, "WASD/Arrows drive   .   Space/F fire   .   E get out / in car   .   R restart   .   M world map", 18)
+	var hint := _make_label(self, "WASD drive   .   Arrows aim turret   .   Space/F fire   .   E in/out   .   R restart   .   ESC pause", 18)
 	hint.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	hint.position = Vector2(20, -40)
 	hint.modulate = Color(1, 1, 1, 0.75)

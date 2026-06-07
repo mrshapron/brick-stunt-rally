@@ -4,6 +4,7 @@ extends DriveScene
 
 var builder: LevelBuilder
 var hud: HUD
+var pause_menu: PauseMenu
 
 var elapsed: float = 0.0
 var running: bool = false
@@ -39,6 +40,7 @@ func _ready() -> void:
 	vehicle.died.connect(_on_player_died)
 	add_camera()
 	_setup_hud(data.get("name", "Level"))
+	_setup_pause_menu()
 
 	combat = data.get("combat", false)
 	if combat:
@@ -108,6 +110,18 @@ func _setup_hud(level_name: String) -> void:
 	hud.set_level_name(level_name)
 
 
+func _setup_pause_menu() -> void:
+	pause_menu = PauseMenu.new()
+	add_child(pause_menu)
+	pause_menu.restart_requested.connect(_on_restart)
+	pause_menu.map_requested.connect(_to_world_map)
+
+
+func _on_restart() -> void:
+	Sfx.stop_engine()
+	get_tree().reload_current_scene()
+
+
 func _physics_process(delta: float) -> void:
 	if running and not finished:
 		elapsed += delta
@@ -124,10 +138,8 @@ func _process(_delta: float) -> void:
 		if not finished:
 			Sfx.set_engine_speed(vehicle.get_speed_kmh() / (vehicle.max_speed * 3.6))
 
-	if Input.is_action_just_pressed("menu"):
-		_to_world_map()
-	elif Input.is_action_just_pressed("restart"):
-		get_tree().reload_current_scene()
+	if Input.is_action_just_pressed("restart"):
+		_on_restart()
 	elif finished and Input.is_action_just_pressed("advance"):
 		if _has_reward:
 			_has_reward = false

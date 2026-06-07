@@ -25,6 +25,9 @@ signal died
 @export var rolling_resistance: float = 1.5
 ## How much the body visually pitches/rolls under acceleration (springy feel).
 @export var lean_amount: float = 0.011
+## Rocket turret aiming (arrow keys): yaw turn rate and barrel elevation rate.
+@export var turret_turn_speed: float = 2.6
+@export var turret_pitch_speed: float = 1.6
 
 var _wheels: Array[RayCast3D] = []
 var _wheel_meshes: Array[MeshInstance3D] = []
@@ -39,6 +42,11 @@ var _dead: bool = false
 var controlled: bool = true
 var _driver: Node3D
 var _launchers: Array[Vector3] = []
+var _turret: Node3D
+var _barrels: Node3D
+var _turret_yaw: float = 0.0
+var _turret_pitch: float = 0.12
+var _top_y: float = 0.6
 
 
 func _ready() -> void:
@@ -82,6 +90,7 @@ func _build_from_design() -> void:
 		mx = Vector3.ZERO
 	var center := (mn + mx) * 0.5
 	var dim := (mx - mn + Vector3.ONE) * scale
+	_top_y = dim.y * 0.5
 
 	# Remove the placeholder collider; we build one collider per solid brick so
 	# the car's collision matches exactly what was built.
@@ -279,6 +288,8 @@ func _physics_process(delta: float) -> void:
 	if _dust:
 		_dust.emitting = _grounded and hvel.length() > 4.0
 
+	_aim_turret(delta)
+
 	_fire_timer -= delta
 	if controlled and not _dead and Input.is_action_pressed("fire") and _fire_timer <= 0.0:
 		_fire_timer = fire_cooldown
@@ -288,23 +299,58 @@ func _physics_process(delta: float) -> void:
 
 
 func _build_launchers() -> void:
-	for sz in [-0.55, 0.55]:
+	# Rotatable rocket turret on the roof. The arrow keys yaw "_turret" and
+	# elevate "_barrels"; missiles fly along the barrels' aim, independent of
+	# which way the car is driving.
+	_turret = Node3D.new()
+	_turret.position = Vector3(0.0, _top_y + 0.18, 0.0)
+	_chassis.add_child(_turret)
+
+	var base := MeshInstance3D.new()
+	var base_mesh := BoxMesh.new()
+	base_mesh.size = Vector3(0.7, 0.34, 0.9)
+	base.mesh = base_mesh
+	var base_mat := StandardMaterial3D.new()
+	base_mat.albedo_color = Color(0.22, 0.23, 0.28)
+	base_mat.metallic = 0.4
+	base.material_override = base_mat
+	_turret.add_child(base)
+
+	_barrels = Node3D.new()
+	_barrels.position = Vector3(0.0, 0.12, 0.0)
+	_turret.add_child(_barrels)
+
+	for sz in [-0.28, 0.28]:
 		var mi := MeshInstance3D.new()
 		var bm := BoxMesh.new()
-		bm.size = Vector3(1.2, 0.32, 0.32)
+		bm.size = Vector3(1.2, 0.3, 0.3)
 		mi.mesh = bm
-		mi.position = Vector3(0.4, 1.0, sz)
+		mi.position = Vector3(0.5, 0.0, sz)
 		var m := StandardMaterial3D.new()
 		m.albedo_color = Color(0.16, 0.16, 0.19)
-		m.metallic = 0.4
+		m.metallic = 0.5
 		mi.material_override = m
-		_chassis.add_child(mi)
+		_barrels.add_child(mi)
+
+
+func _aim_turret(delta: float) -> void:
+	if controlled and not _dead:
+		var ay := Input.get_axis("aim_right", "aim_left")
+		var ap := Input.get_axis("aim_down", "aim_up")
+		_turret_yaw += ay * turret_turn_speed * delta
+		_turret_pitch = clampf(_turret_pitch + ap * turret_pitch_speed * delta, -0.1, 1.0)
+	if _turret:
+		_turret.rotation.y = _turret_yaw
+	if _barrels:
+		_barrels.rotation.z = _turret_pitch
 
 
 func _shoot() -> void:
-	var dir := global_transform.basis.x
-	for local in _launchers:
-		var muzzle := to_global(local) + dir * 0.8
+	if not _barrels:
+		return
+	var dir := _barrels.global_transform.basis.x
+	for sz in [-0.28, 0.28]:
+		var muzzle := _barrels.to_global(Vector3(1.15, 0.0, sz))
 		var m := Missile.new()
 		m.setup(dir, missile_damage)
 		m.position = muzzle

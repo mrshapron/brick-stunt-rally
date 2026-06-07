@@ -96,13 +96,13 @@ func _setup_world() -> void:
 
 func _process(delta: float) -> void:
 	var rot := 1.6 * delta
-	if Input.is_action_pressed("move_left"):
+	if Input.is_action_pressed("move_left") or Input.is_action_pressed("aim_left"):
 		_yaw -= rot
-	if Input.is_action_pressed("move_right"):
+	if Input.is_action_pressed("move_right") or Input.is_action_pressed("aim_right"):
 		_yaw += rot
-	if Input.is_action_pressed("move_up"):
+	if Input.is_action_pressed("move_up") or Input.is_action_pressed("aim_up"):
 		_pitch = clampf(_pitch + rot, 0.15, 1.4)
-	if Input.is_action_pressed("move_down"):
+	if Input.is_action_pressed("move_down") or Input.is_action_pressed("aim_down"):
 		_pitch = clampf(_pitch - rot, 0.15, 1.4)
 	_update_camera()
 	_update_targets()

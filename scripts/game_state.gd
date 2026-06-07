@@ -357,14 +357,22 @@ func _load() -> void:
 
 
 func _setup_input() -> void:
-	_add_action("move_right", [KEY_RIGHT, KEY_D])
-	_add_action("move_left", [KEY_LEFT, KEY_A])
-	_add_action("move_up", [KEY_UP, KEY_W])
-	_add_action("move_down", [KEY_DOWN, KEY_S])
+	# WASD drives the wheels; the arrow keys aim the rocket turret.
+	_add_action("move_right", [KEY_D])
+	_add_action("move_left", [KEY_A])
+	_add_action("move_up", [KEY_W])
+	_add_action("move_down", [KEY_S])
+	_add_action("aim_left", [KEY_LEFT])
+	_add_action("aim_right", [KEY_RIGHT])
+	_add_action("aim_up", [KEY_UP])
+	_add_action("aim_down", [KEY_DOWN])
 	_add_action("fire", [KEY_SPACE, KEY_F])
 	_add_action("interact", [KEY_E, KEY_C])
 	_add_action("restart", [KEY_R])
+	# In menu/navigation scenes ESC and M both go "back". The gameplay scene
+	# instead treats ESC as "pause" (see its own handling) and ignores "menu".
 	_add_action("menu", [KEY_ESCAPE, KEY_M])
+	_add_action("pause", [KEY_ESCAPE])
 	_add_action("advance", [KEY_N, KEY_ENTER])
 
 
