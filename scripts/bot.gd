@@ -16,7 +16,9 @@ var _player: Node3D
 
 
 func configure(spd: float, finish_x: float, car_index: int, lane_z: float, can_shoot: bool, start_x: float = 0.0) -> void:
-	sync_to_physics = true
+	# Must be false: when true the physics server owns the transform and our
+	# direct position writes get discarded (all bots would snap back to origin).
+	sync_to_physics = false
 	speed = spd
 	_finish_x = finish_x
 	_lane_z = lane_z
