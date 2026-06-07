@@ -15,50 +15,50 @@ func _ready() -> void:
 	add_light_and_env()
 	add_fade()
 
-	var half := 75.0
+	var half := 92.0
 	add_ground(Vector3(half * 2.0, 3, half * 2.0), Color("#6b7080"), true)
 	add_border(half - 2.0, half - 2.0, Color("#4f5460"))
-	add_skyline(half, half, ["#6fae4f", "#d8a84e", "#19e0c8", "#ff7b29"], 14, 12345)
-	add_scenery(half, Color("#4f7a3f"), Color(0.32, 0.62, 0.28), 22, true, false)
+	add_skyline(half, half, ["#6fae4f", "#d8a84e", "#19e0c8", "#ff7b29"], 16, 12345)
+	add_scenery(half, Color("#4f7a3f"), Color(0.32, 0.62, 0.28), 24, true, false)
 
-	# Portals spread across the wide ground, each on a decorated pad.
-	var spots := [Vector3(-52, 3.5, -44), Vector3(52, 3.5, -44), Vector3(-52, 3.5, 36), Vector3(52, 3.5, 36)]
-	for i in GameState.get_world_count():
+	# World portals in a back row, each on a decorated pad.
+	var n := GameState.get_world_count()
+	for i in n:
 		var w := GameState.get_world(i)
 		var done := GameState.levels_completed(i)
 		var color := Color(w.get("accent", "#e6b32e"))
 		var sub := "%d/%d done" % [done, GameState.LEVELS_PER_WORLD]
-		var pos: Vector3 = spots[i] if i < spots.size() else Vector3(i * 30.0, 3.5, 0)
+		var px := -float(n - 1) * 33.0 * 0.5 + i * 33.0
+		var pos := Vector3(px, 3.5, -56)
 		add_pad(Vector3(pos.x, 0.15, pos.z), Vector3(13, 0.3, 13), color.darkened(0.15))
 		var gate := make_gate(pos, Vector3(6, 7, 6), color,
 			str(w.get("name", "World")), sub, "portal")
 		gate.body_entered.connect(_on_near.bind(gate, i))
 		gate.body_exited.connect(_on_far.bind(gate, i))
 
-	# Laboratory portal (build your own car).
+	# Laboratory + Parking portals in a front row.
 	var lab_color := Color("#7bd0ff")
-	var lab_pos := Vector3(-24, 3.5, -46)
+	var lab_pos := Vector3(-20, 3.5, -28)
 	add_pad(Vector3(lab_pos.x, 0.15, lab_pos.z), Vector3(13, 0.3, 13), lab_color.darkened(0.2))
 	var lab_gate := make_gate(lab_pos, Vector3(6, 7, 6), lab_color, "Laboratory", "build a car", "portal")
 	lab_gate.body_entered.connect(_on_near.bind(lab_gate, LAB))
 	lab_gate.body_exited.connect(_on_far.bind(lab_gate, LAB))
 
-	# Parking portal (choose which owned car to drive).
 	var park_color := Color("#c0c4cc")
-	var park_pos := Vector3(24, 3.5, -46)
+	var park_pos := Vector3(20, 3.5, -28)
 	add_pad(Vector3(park_pos.x, 0.15, park_pos.z), Vector3(13, 0.3, 13), park_color.darkened(0.25))
 	var park_gate := make_gate(park_pos, Vector3(6, 7, 6), park_color, "Parking", "%d cars" % GameState.get_cars().size(), "portal")
 	park_gate.body_entered.connect(_on_near.bind(park_gate, PARK))
 	park_gate.body_exited.connect(_on_far.bind(park_gate, PARK))
 
 	# Ambient engines for life.
-	for spot in [Vector3(-28, 0, -10), Vector3(28, 0, -10), Vector3(0, 0, 45)]:
+	for spot in [Vector3(-40, 0, -10), Vector3(40, 0, -10), Vector3(0, 0, 40)]:
 		var e := PropEngine.new()
 		e.position = spot
 		e.configure({"color": "#8a8f9e", "scale": 1.4, "spin": 3.5})
 		add_child(e)
 
-	spawn_car(Vector3(0, 3, 16))
+	spawn_car(Vector3(0, 3, 8))
 	add_camera()
 	add_overlay("WORLD HUB", "Drive into a world portal and hold for 2s to enter (or press Enter)")
 

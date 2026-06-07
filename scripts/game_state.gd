@@ -62,6 +62,20 @@ const WORLDS: Array = [
 		"dunes": true,
 		"combat": true,
 	},
+	{
+		"name": "Mountains",
+		"ground": "#8a9aa5",
+		"accent": "#c6d2da",
+		"bricks": ["#9aa0b5", "#6b7d6b", "#caa040"],
+		"sky_top": "#5a86c0",
+		"sky_horizon": "#dfeaf2",
+		"mountain": "#6f7d6a",
+		"foliage": "#3a8a2e",
+		"trees": 16,
+		"snow": true,
+		"dunes": false,
+		"climb": true,
+	},
 ]
 
 var current_world: int = 0

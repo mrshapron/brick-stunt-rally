@@ -16,6 +16,8 @@ const DEPTH: float = 26.0
 static func generate(world: int, level: int, theme: Dictionary) -> Dictionary:
 	if theme.get("combat", false):
 		return _generate_combat(world, level, theme)
+	if theme.get("climb", false):
+		return _generate_climb(world, level, theme)
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = (world + 1) * 9973 + level * 131
@@ -131,6 +133,99 @@ static func generate(world: int, level: int, theme: Dictionary) -> Dictionary:
 		"sky_top": theme.get("sky_top", "#4d86db"),
 		"sky_horizon": theme.get("sky_horizon", "#c7d6ea"),
 	}
+
+
+static func _generate_climb(world: int, level: int, theme: Dictionary) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5100 + level * 137
+
+	var ld := float(level) / 10.0
+	var ground: String = theme.get("ground", "#8a9aa5")
+	var accent: String = theme.get("accent", "#c0d0d8")
+	var brick_cols: Array = theme.get("bricks", ["#9aa0b5", "#6b7d6b", "#caa040"])
+
+	var bricks: Array = []
+	var props: Array = []
+	var checkpoints: Array = []
+
+	var angle := 26.0
+	var tan_a := tan(deg_to_rad(angle))
+	var x := -8.0
+	var base := 0.0
+
+	var start_len := 22.0
+	bricks.append(_plateau(x + start_len * 0.5, start_len, base, ground))
+	x += start_len
+
+	var hills := 3 + int(round(ld * 5.0))
+	for i in hills:
+		var h := lerpf(4.0, 9.5, ld) * rng.randf_range(0.85, 1.12)
+		var up_len := h / tan_a
+		bricks.append(_wedge(x + up_len * 0.5, base, up_len, h, accent, false))
+		x += up_len
+
+		var top := base + h
+		var plen := rng.randf_range(11.0, 17.0)
+		bricks.append(_plateau(x + plen * 0.5, plen, top, ground))
+		var pmid := x + plen * 0.5
+
+		if rng.randf() < 0.6:
+			bricks.append_array(_stack_at(pmid, rng.randf_range(-7.0, 7.0), top, 2 + int(ld * 3.0), brick_cols, rng))
+		# Things falling from the sky onto the peak.
+		if level >= 2 and rng.randf() < 0.7:
+			props.append({
+				"type": "faller",
+				"pos": [pmid, top + 1.0, 0],
+				"interval": lerpf(2.2, 1.0, ld),
+				"width": plen * 0.8,
+				"height": 22.0,
+				"color": "#6f7d6a",
+			})
+		x += plen
+
+		var down_len := h / tan_a
+		bricks.append(_wedge(x + down_len * 0.5, base, down_len, h, accent, true))
+		x += down_len
+
+		var flen := rng.randf_range(12.0, 18.0)
+		bricks.append(_plateau(x + flen * 0.5, flen, base, ground))
+		checkpoints.append({"pos": [x + flen - 4.0, base + 2.5, 0], "size": [2, 6, DEPTH]})
+		x += flen
+
+	var fin_len := 22.0
+	bricks.append(_plateau(x + fin_len * 0.5, fin_len, base, ground))
+
+	return {
+		"name": "%s  -  Level %d" % [theme.get("name", "Mountains"), level],
+		"spawn": [2, 4, 0],
+		"bricks": bricks,
+		"loops": [],
+		"props": props,
+		"checkpoints": checkpoints,
+		"finish": {"pos": [x + fin_len * 0.6, 3, 0], "size": [2.5, 8, DEPTH]},
+		"sky_top": theme.get("sky_top", "#5a86c0"),
+		"sky_horizon": theme.get("sky_horizon", "#dfeaf2"),
+	}
+
+
+static func _plateau(cx: float, length: float, top_y: float, color: String) -> Dictionary:
+	return {"size": [length, 3, DEPTH], "pos": [cx, top_y - 1.5, 0], "color": color, "kind": "static"}
+
+
+static func _wedge(cx: float, base_y: float, length: float, height: float, color: String, flip: bool) -> Dictionary:
+	return {"kind": "wedge", "size": [length, height, DEPTH], "pos": [cx, base_y + height * 0.5 - 0.05, 0], "color": color, "flip": flip}
+
+
+static func _stack_at(cx: float, cz: float, base_y: float, height: int, colors: Array, rng: RandomNumberGenerator) -> Array:
+	var arr: Array = []
+	for k in height:
+		arr.append({
+			"size": [1.8, 1.6, 2.4],
+			"pos": [cx, base_y + 0.82 + k * 1.64, cz],
+			"color": colors[rng.randi() % colors.size()],
+			"kind": "destructible",
+		})
+	return arr
 
 
 static func _generate_combat(world: int, level: int, theme: Dictionary) -> Dictionary:

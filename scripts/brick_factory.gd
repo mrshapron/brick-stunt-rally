@@ -10,14 +10,14 @@ const STUD_RADIUS: float = 0.3
 const STUD_HEIGHT: float = 0.22
 
 
-static func make_wedge(size: Vector3, color: Color) -> Node3D:
-	# A clean ramp: a triangular prism that sits flush on the ground (slope rises
-	# toward +X), with a matching convex collision so the car rolls up smoothly.
+static func make_wedge(size: Vector3, color: Color, flip: bool = false) -> Node3D:
+	# A clean ramp: a triangular prism that sits flush on the ground. Rises toward
+	# +X by default, or descends toward +X when flip is true.
 	var body := StaticBody3D.new()
 	var mi := MeshInstance3D.new()
 	var prism := PrismMesh.new()
 	prism.size = size
-	prism.left_to_right = 1.0
+	prism.left_to_right = 0.0 if flip else 1.0
 	mi.mesh = prism
 	mi.material_override = _body_material(color)
 	body.add_child(mi)

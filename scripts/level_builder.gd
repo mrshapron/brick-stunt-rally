@@ -19,7 +19,7 @@ func build(data: Dictionary) -> Vector3:
 			_build_area(_v3(b.get("pos", [0, 0, 0])), _v3(b.get("size", [4, 1, 8])),
 				"hazard", Color(1.0, 0.23, 0.19))
 		elif kind == "wedge":
-			var w := BrickFactory.make_wedge(_v3(b.get("size", [8, 3, 8])), _to_color(b.get("color", "#e6b32e")))
+			var w := BrickFactory.make_wedge(_v3(b.get("size", [8, 3, 8])), _to_color(b.get("color", "#e6b32e")), bool(b.get("flip", false)))
 			w.position = _v3(b.get("pos", [0, 0, 0]))
 			add_child(w)
 		else:
