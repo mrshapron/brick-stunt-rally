@@ -42,7 +42,7 @@ func _ready() -> void:
 	add_child(ring)
 
 	_car_node = CarLib.build_display(GameState.last_reward_design)
-	_car_node.position = Vector3(0, 1.7, 0)
+	_car_node.position = Vector3(0, 1.2, 0)
 	add_child(_car_node)
 
 	for c in ["#d2473b", "#3b86d2", "#e6b32e"]:

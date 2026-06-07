@@ -34,7 +34,7 @@ func _ready() -> void:
 	for i in n:
 		var x := startx + (i + 0.5) * slot_w
 		var disp := CarLib.build_display(owned[i])
-		disp.position = Vector3(x, 0.7, lot_z)
+		disp.position = Vector3(x, 0.2, lot_z)
 		disp.rotation.y = -PI * 0.5
 		add_child(disp)
 

@@ -49,8 +49,11 @@ static func _car(lx: int, lz: int, base: String, cab: String, rockets: int) -> A
 
 
 static func build_display(design_arr: Array) -> Node3D:
-	# Visual-only model (no physics) for the parking lot.
+	# Visual-only model that sits on its wheels (body lifted, wheels dropped) with
+	# its lowest point at y=0 - so callers can place the root right on the ground.
+	# Exposes the wheel MeshInstances via meta("wheels") so they can be spun.
 	var root := Node3D.new()
+	var wheels: Array = []
 	var mnx := 99.0
 	var mnz := 99.0
 	var mxx := -99.0
@@ -67,24 +70,29 @@ static func build_display(design_arr: Array) -> Node3D:
 		mxz = 0.0
 	var cx := (mnx + mxx) * 0.5
 	var cz := (mnz + mxz) * 0.5
+	var min_bottom := 999.0
 
 	for v in design_arr:
 		var kind: String = str(v[4]) if v.size() > 4 else "block"
 		var color := Color(str(v[3])) if v.size() > 3 else Color(0.8, 0.3, 0.25)
 		var local := Vector3((float(v[0]) - cx) * SCALE, float(v[1]) * SCALE, (float(v[2]) - cz) * SCALE)
 		if kind == "wheel":
+			local.y -= 0.18
 			var w := MeshInstance3D.new()
 			var cyl := CylinderMesh.new()
-			cyl.top_radius = 0.26
-			cyl.bottom_radius = 0.26
-			cyl.height = 0.24
+			cyl.top_radius = 0.34
+			cyl.bottom_radius = 0.34
+			cyl.height = 0.3
 			cyl.radial_segments = 16
 			w.mesh = cyl
 			w.rotation_degrees = Vector3(90, 0, 0)
 			w.position = local
 			w.material_override = _mat(Color(0.08, 0.08, 0.1))
 			root.add_child(w)
+			wheels.append(w)
+			min_bottom = minf(min_bottom, local.y - 0.34)
 		elif kind == "rocket":
+			local.y += 0.3
 			var t := MeshInstance3D.new()
 			var b := BoxMesh.new()
 			b.size = Vector3(0.5, 0.2, 0.2)
@@ -93,6 +101,7 @@ static func build_display(design_arr: Array) -> Node3D:
 			t.material_override = _mat(Color(0.7, 0.7, 0.75))
 			root.add_child(t)
 		else:
+			local.y += 0.18
 			var mi := MeshInstance3D.new()
 			var bm := BoxMesh.new()
 			bm.size = Vector3.ONE * SCALE * 0.92
@@ -100,6 +109,12 @@ static func build_display(design_arr: Array) -> Node3D:
 			mi.position = local
 			mi.material_override = _mat(color)
 			root.add_child(mi)
+			min_bottom = minf(min_bottom, local.y - SCALE * 0.46)
+
+	if min_bottom < 900.0:
+		for child in root.get_children():
+			child.position.y -= min_bottom
+	root.set_meta("wheels", wheels)
 	return root
 
 
