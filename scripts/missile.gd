@@ -4,6 +4,11 @@ extends Area3D
 ## glow that flies straight, damages enemies on contact, and explodes on any hit
 ## (ignores the player who fired it).
 
+## Gentle homing: within HOME_RANGE the rocket curves toward the nearest enemy
+## (a light "magnet", not a perfect lock) so near-misses still connect.
+const HOME_RANGE: float = 18.0
+const HOME_STRENGTH: float = 2.6
+
 var velocity: Vector3 = Vector3.ZERO
 var damage: float = 34.0
 var _life: float = 3.0
@@ -17,14 +22,7 @@ func setup(dir: Vector3, dmg: float) -> void:
 func _ready() -> void:
 	# Point the rocket's +X (nose) along the full 3D travel direction, so it
 	# tilts up/down with the turret aim instead of staying flat.
-	if velocity.length() > 0.01:
-		var x := velocity.normalized()
-		var ref := Vector3.UP
-		if absf(x.dot(ref)) > 0.999:
-			ref = Vector3.RIGHT
-		var z := x.cross(ref).normalized()
-		var y := z.cross(x).normalized()
-		transform.basis = Basis(x, y, z)
+	_orient()
 
 	var cs := CollisionShape3D.new()
 	var sp := SphereShape3D.new()
@@ -116,10 +114,47 @@ func _build_rocket() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var target := _nearest_enemy()
+	if target != null:
+		var want := (target.global_position - global_position)
+		want.y *= 0.6
+		if want.length() > 0.5:
+			var cur := velocity.normalized()
+			var wdir := want.normalized()
+			# Only magnetise toward enemies roughly ahead (no U-turns).
+			if cur.dot(wdir) > -0.15:
+				var blended := (cur + (wdir - cur) * clampf(HOME_STRENGTH * delta, 0.0, 1.0)).normalized()
+				velocity = blended * velocity.length()
+				_orient()
 	global_position += velocity * delta
 	_life -= delta
 	if _life <= 0.0:
 		queue_free()
+
+
+func _nearest_enemy() -> Node3D:
+	var best: Node3D = null
+	var best_d := HOME_RANGE * HOME_RANGE
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if not (e is Node3D) or not is_instance_valid(e):
+			continue
+		var d := global_position.distance_squared_to((e as Node3D).global_position)
+		if d < best_d:
+			best_d = d
+			best = e
+	return best
+
+
+func _orient() -> void:
+	if velocity.length() <= 0.01:
+		return
+	var x := velocity.normalized()
+	var ref := Vector3.UP
+	if absf(x.dot(ref)) > 0.999:
+		ref = Vector3.RIGHT
+	var z := x.cross(ref).normalized()
+	var y := z.cross(x).normalized()
+	global_transform.basis = Basis(x, y, z)
 
 
 func _on_body_entered(body: Node) -> void:

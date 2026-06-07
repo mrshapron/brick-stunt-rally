@@ -30,6 +30,19 @@ func _ready() -> void:
 
 	add_bridge(0, -12, 38, 4.5, Color("#b0683a"))
 
+	# Two landmark brick builds flanking the entrance avenue, angled inward so
+	# you see them face-on while driving toward the world portals.
+	var nyc := Decor.nyc_skyline()
+	nyc.position = Vector3(-40, 0, 18)
+	nyc.rotation.y = PI * 0.32
+	add_child(nyc)
+
+	var bear := Decor.pink_bear()
+	bear.position = Vector3(40, 0, 18)
+	bear.rotation.y = -PI * 0.32
+	bear.scale = Vector3(1.6, 1.6, 1.6)
+	add_child(bear)
+
 	# World portals in a back row, each on a decorated pad.
 	var n := GameState.get_world_count()
 	for i in n:

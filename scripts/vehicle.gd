@@ -12,6 +12,10 @@ signal died
 @export var max_health: float = 100.0
 @export var fire_cooldown: float = 0.32
 @export var missile_damage: float = 34.0
+## Health regen: after this many seconds without taking a hit, the car slowly
+## heals back up at regen_rate HP per second.
+@export var regen_delay: float = 4.0
+@export var regen_rate: float = 7.0
 @export var engine_accel: float = 30.0
 @export var max_speed: float = 24.0
 @export var turn_speed: float = 9.0
@@ -38,6 +42,7 @@ var _chassis: Node3D
 var _prev_vel: Vector3 = Vector3.ZERO
 var health: float = 100.0
 var _fire_timer: float = 0.0
+var _since_hit: float = 999.0
 var _dead: bool = false
 var controlled: bool = true
 var _driver: Node3D
@@ -290,6 +295,12 @@ func _physics_process(delta: float) -> void:
 
 	_aim_turret(delta)
 
+	# Regenerate health while not being hit (recover between firefights).
+	_since_hit += delta
+	if not _dead and _since_hit > regen_delay and health < max_health:
+		health = minf(max_health, health + regen_rate * delta)
+		damaged.emit(health / max_health)
+
 	_fire_timer -= delta
 	if controlled and not _dead and Input.is_action_pressed("fire") and _fire_timer <= 0.0:
 		_fire_timer = fire_cooldown
@@ -361,6 +372,7 @@ func _shoot() -> void:
 func take_damage(d: float) -> void:
 	if _dead:
 		return
+	_since_hit = 0.0
 	health = maxf(0.0, health - d)
 	damaged.emit(health / max_health)
 	Sfx.play_hit()
@@ -408,6 +420,8 @@ func _spin_wheels(speed: float, delta: float) -> void:
 func _on_body_entered(body: Node) -> void:
 	if body.is_in_group("destructible") and linear_velocity.length() > 6.0:
 		Sfx.play_smash()
+		# A crash costs a little health (it regenerates afterward).
+		take_damage(5.0)
 		if body is RigidBody3D:
 			var dir := Vector3(linear_velocity.x, 0.0, linear_velocity.z).normalized()
 			var impulse := dir * 6.0 + Vector3(0, 4.0, 0)

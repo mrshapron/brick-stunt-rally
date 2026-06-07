@@ -16,7 +16,11 @@ var combat: bool = false
 var enemies_alive: int = 0
 var race: bool = false
 var _bots: Array = []
-var _finish_x: float = 0.0
+var _track: RaceTrack
+var _laps: int = 1
+var _player_laps: int = 0
+var _last_s: float = 0.0
+var _player_prog: float = 0.0
 var _has_reward: bool = false
 
 
@@ -55,24 +59,47 @@ func _ready() -> void:
 
 
 func _setup_race(data: Dictionary) -> void:
-	_finish_x = float(data.get("finish_x", 100.0))
+	_track = data.get("track")
+	_laps = int(data.get("laps", 1))
 	var lanes: Array = data.get("bots", [])
 	for i in lanes.size():
 		var bd: Dictionary = lanes[i]
 		var bot := Bot.new()
 		add_child(bot)
-		# Staggered starting grid so they don't pile up (unique x + z per bot).
-		var sx := float(bd.get("start_x", -6.0 - float(i) * 5.0))
-		bot.configure(float(bd.get("speed", 16.0)), _finish_x, int(bd.get("car", 0)), float(bd.get("lane_z", 0.0)), bool(bd.get("shoots", false)), sx)
+		bot.configure(_track, float(bd.get("speed", 16.0)), int(bd.get("car", 0)), float(bd.get("lane", 0.0)), bool(bd.get("shoots", false)), float(bd.get("start_s", -6.0 - float(i) * 5.0)))
 		_bots.append(bot)
+	if _track and is_instance_valid(vehicle):
+		_last_s = _track.nearest_s(Vector2(vehicle.global_position.x, vehicle.global_position.z))
 	if hud:
-		hud.set_race(1, _bots.size() + 1)
+		hud.set_race(1, _bots.size() + 1, 1, _laps)
+
+
+func _update_race_progress() -> void:
+	if _track == null or not is_instance_valid(vehicle):
+		return
+	var s := _track.nearest_s(Vector2(vehicle.global_position.x, vehicle.global_position.z))
+	if _track.closed:
+		var ds := s - _last_s
+		if ds < -_track.length * 0.5:
+			_player_laps += 1
+		elif ds > _track.length * 0.5:
+			_player_laps = maxi(0, _player_laps - 1)
+	_last_s = s
+	_player_prog = float(_player_laps) * _track.length + s
+
+
+func _race_done() -> bool:
+	if _track == null:
+		return false
+	if _track.closed:
+		return _player_laps >= _laps
+	return _player_prog >= _track.length - 4.0
 
 
 func _player_place() -> int:
 	var ahead := 0
 	for b in _bots:
-		if is_instance_valid(b) and b.position.x > vehicle.global_position.x:
+		if is_instance_valid(b) and b.progress() > _player_prog:
 			ahead += 1
 	return ahead + 1
 
@@ -131,10 +158,15 @@ func _physics_process(delta: float) -> void:
 
 func _process(_delta: float) -> void:
 	if is_instance_valid(vehicle):
+		if race and not finished:
+			_update_race_progress()
+			if hud:
+				var lap := clampi(_player_laps + 1, 1, _laps)
+				hud.set_race(_player_place(), _bots.size() + 1, lap, _laps)
+			if _race_done():
+				_finish_race()
 		if hud:
 			hud.update_hud(elapsed, vehicle.get_speed_kmh(), flips)
-			if race and not finished:
-				hud.set_race(_player_place(), _bots.size() + 1)
 		if not finished:
 			Sfx.set_engine_speed(vehicle.get_speed_kmh() / (vehicle.max_speed * 3.6))
 

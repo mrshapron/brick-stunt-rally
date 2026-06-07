@@ -263,13 +263,15 @@ func _cone(pos: Vector3, radius: float, height: float, segs: int, color: Color) 
 
 
 func _tree(pos: Vector3, leaf: Color, rng: RandomNumberGenerator) -> void:
+	var t := Node3D.new()
+	t.position = pos
 	var trunk := MeshInstance3D.new()
 	var tb := BoxMesh.new()
 	tb.size = Vector3(0.9, 3.0, 0.9)
 	trunk.mesh = tb
-	trunk.position = pos + Vector3(0, 1.5, 0)
+	trunk.position = Vector3(0, 1.5, 0)
 	trunk.material_override = _flat(Color(0.45, 0.3, 0.18))
-	add_child(trunk)
+	t.add_child(trunk)
 	var n := rng.randi_range(2, 3)
 	for k in n:
 		var leaf_mi := MeshInstance3D.new()
@@ -277,9 +279,11 @@ func _tree(pos: Vector3, leaf: Color, rng: RandomNumberGenerator) -> void:
 		var w := 3.2 - k * 0.7
 		lb.size = Vector3(w, 1.6, w)
 		leaf_mi.mesh = lb
-		leaf_mi.position = pos + Vector3(0, 3.2 + k * 1.3, 0)
+		leaf_mi.position = Vector3(0, 3.2 + k * 1.3, 0)
 		leaf_mi.material_override = _flat(leaf.lightened(k * 0.06))
-		add_child(leaf_mi)
+		t.add_child(leaf_mi)
+	Decor.solidify(t)
+	add_child(t)
 
 
 func _cloud(pos: Vector3, rng: RandomNumberGenerator) -> void:

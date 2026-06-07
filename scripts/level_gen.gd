@@ -159,59 +159,125 @@ static func _generate_race(world: int, level: int, theme: Dictionary) -> Diction
 
 	var ld := float(level) / 10.0
 	var ground: String = theme.get("ground", "#454a55")
+	var accent: String = theme.get("accent", "#e8e84d")
 	var brick_cols: Array = theme.get("bricks", ["#d2473b", "#3b86d2", "#e6b32e"])
 
-	var track_len := 180.0 + level * 22.0
-	var width := 42.0
+	# Advanced levels race a closed circuit you lap 3 times (an "Olympic"-style
+	# loop); earlier levels are a point-to-point sprint with gentle S-turns.
+	var circuit := level >= 7
+	var width := 30.0
+	var points := PackedVector2Array()
+	var laps := 1
+
+	if circuit:
+		laps = 3
+		var rx := 95.0
+		var rz := 56.0 + ld * 8.0
+		var segs := 60
+		for i in segs:
+			var a := TAU * float(i) / float(segs)
+			# Ellipse that starts at (0,0) heading +X, plus a gentle chicane.
+			var x := rx * sin(a)
+			var z := rz * (1.0 - cos(a)) + sin(a * 3.0) * 5.0
+			points.append(Vector2(x, z))
+	else:
+		var track_len := 200.0 + level * 16.0
+		var segs := 26
+		var amp := lerpf(4.0, 18.0, ld)
+		for i in segs + 1:
+			var x := track_len * float(i) / float(segs)
+			var z := sin(float(i) * 0.6) * amp + sin(float(i) * 0.27) * amp * 0.5
+			points.append(Vector2(x, z))
+
+	var track := RaceTrack.new()
+	track.setup(points, circuit, laps, width)
 
 	var bricks: Array = []
-	bricks.append({"size": [track_len + 30.0, 3, width], "pos": [track_len * 0.5, -1.5, 0], "color": ground, "kind": "static", "road": true})
-	# Side guard rails so racers can't get bumped off the track.
-	for sz in [width * 0.5, -width * 0.5]:
-		bricks.append({"size": [track_len + 30.0, 2.0, 1.4], "pos": [track_len * 0.5, 1.0, sz], "color": theme.get("accent", "#e8e84d"), "kind": "static"})
+	# A big base ground so going off-track lands on grass, not into the void.
+	var mnx := 1e9
+	var mxx := -1e9
+	var mnz := 1e9
+	var mxz := -1e9
+	for p in points:
+		mnx = minf(mnx, p.x)
+		mxx = maxf(mxx, p.x)
+		mnz = minf(mnz, p.y)
+		mxz = maxf(mxz, p.y)
+	var pad := 70.0
+	bricks.append({
+		"size": [(mxx - mnx) + pad * 2.0, 3, (mxz - mnz) + pad * 2.0],
+		"pos": [(mnx + mxx) * 0.5, -1.85, (mnz + mxz) * 0.5],
+		"color": Color(ground).darkened(0.18).to_html(), "kind": "static",
+	})
 
-	# Obstacle blocks to weave around (more at higher levels).
-	var obstacles := 4 + level
+	_bake_road(track, bricks, ground, accent)
+
+	# Obstacle blocks to weave around (kept off the racing line, away from start).
+	var obstacles := 3 + int(level / 2)
 	for i in obstacles:
-		var ox := rng.randf_range(34.0, track_len - 30.0)
-		var oz := rng.randf_range(-16.0, 16.0)
-		bricks.append({"size": [2, 2, 2], "pos": [ox, 1.0, oz], "color": brick_cols[rng.randi() % brick_cols.size()], "kind": "destructible"})
+		var s := rng.randf_range(track.length * 0.12, track.length * 0.92)
+		var pos: Vector2 = track.sample_pos(s)
+		var dir: Vector2 = track.sample_dir(s)
+		var off := rng.randf_range(-width * 0.28, width * 0.28)
+		var pp: Vector2 = pos + track.perp(dir) * off
+		bricks.append({"size": [2, 2, 2], "pos": [pp.x, 1.0, pp.y], "color": brick_cols[rng.randi() % brick_cols.size()], "kind": "destructible"})
 
-	# Opponent bots. More and faster as levels rise (easy early, hard late).
-	# Lay them out as a proper staggered starting grid: every bot gets a UNIQUE
-	# lane (z) and a UNIQUE row (x) set back from the player, so two cars can
-	# never share a spot or overlap at the line.
+	# Opponent bots: staggered behind the start line (unique lane + row).
 	var bots: Array = []
 	var num := 3 + int(level / 3)
-	var base := lerpf(12.0, 21.0, ld)
-	var lane_step := 7.0
-	var max_lane := width * 0.5 - 4.0
+	var base := lerpf(13.0, 22.0, ld)
+	var max_lane := width * 0.5 - 3.0
 	for i in num:
 		var side := 1.0 if i % 2 == 0 else -1.0
 		var rank := int(i / 2)
-		var lz: float = clampf(side * (lane_step * float(rank + 1)), -max_lane, max_lane)
+		var lane: float = clampf(side * (3.0 + float(rank) * 3.0), -max_lane, max_lane)
 		bots.append({
 			"speed": base + rng.randf_range(-1.0, 1.5) + i * 0.2,
-			"lane_z": lz,
-			"start_x": -6.0 - float(i) * 5.0,
+			"lane": lane,
+			"start_s": -6.0 - float(i) * 5.0,
 			"car": i % 8,
 			"shoots": level >= 6,
 		})
 
+	var sp: Vector2 = track.sample_pos(0.0)
+	var kind_name := "Circuit" if circuit else "Race"
 	return {
-		"name": "%s  -  Race %d" % [theme.get("name", "Speedway"), level],
-		"spawn": [2, 4, 0],
+		"name": "%s  -  %s %d" % [theme.get("name", "Speedway"), kind_name, level],
+		"spawn": [sp.x + 2.0, 4, sp.y],
 		"bricks": bricks,
 		"loops": [],
 		"props": [],
 		"checkpoints": [],
 		"race": true,
 		"bots": bots,
-		"finish_x": track_len,
-		"finish": {"pos": [track_len, 3, 0], "size": [2.5, 8, width]},
+		"track": track,
+		"laps": laps,
 		"sky_top": theme.get("sky_top", "#3a5a86"),
 		"sky_horizon": theme.get("sky_horizon", "#bcd0e0"),
 	}
+
+
+static func _bake_road(track: RaceTrack, bricks: Array, ground: String, accent: String) -> void:
+	# Lay the road as short segments following the centreline (rotated about Y),
+	# with a dashed centre line and guard rails down both sides.
+	var n := track.pts.size()
+	var seg_count := n if track.closed else n - 1
+	for i in seg_count:
+		var a: Vector2 = track.pts[i]
+		var b: Vector2 = track.pts[(i + 1) % n]
+		var mid: Vector2 = (a + b) * 0.5
+		var d: Vector2 = b - a
+		var seg_len := d.length()
+		if seg_len < 0.01:
+			continue
+		var yaw := rad_to_deg(atan2(-d.y, d.x))
+		var perp: Vector2 = Vector2(-d.y, d.x).normalized()
+		bricks.append({"size": [seg_len * 1.1, 3, track.width], "pos": [mid.x, -1.5, mid.y], "color": ground, "kind": "static", "yaw": yaw, "studs": false})
+		if i % 2 == 0:
+			bricks.append({"size": [seg_len * 0.45, 0.2, 0.6], "pos": [mid.x, 0.16, mid.y], "color": "#e6c020", "kind": "static", "yaw": yaw, "studs": false})
+		for sgn in [1.0, -1.0]:
+			var rp: Vector2 = mid + perp * (track.width * 0.5) * sgn
+			bricks.append({"size": [seg_len * 1.12, 2.0, 1.2], "pos": [rp.x, 1.0, rp.y], "color": accent, "kind": "static", "yaw": yaw, "studs": false})
 
 
 static func _generate_climb(world: int, level: int, theme: Dictionary) -> Dictionary:

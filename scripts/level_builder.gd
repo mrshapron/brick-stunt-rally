@@ -52,6 +52,8 @@ func _build_brick(b: Dictionary) -> void:
 	brick.position = _v3(b.get("pos", [0, 0, 0]))
 	if b.has("rot"):
 		brick.rotation.z = deg_to_rad(float(b["rot"]))
+	if b.has("yaw"):
+		brick.rotation.y = deg_to_rad(float(b["yaw"]))
 	if b.get("road", false):
 		_add_road_markings(brick, size)
 		# A roadside lamp post, alternating sides down the track.

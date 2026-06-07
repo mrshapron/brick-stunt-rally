@@ -130,21 +130,22 @@ func _build_complete_panel() -> void:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.12, 0.13, 0.2, 0.96)
 	sb.border_color = Color(1.0, 0.82, 0.3, 1.0)
-	sb.set_border_width_all(5)
-	sb.set_corner_radius_all(22)
-	sb.set_content_margin_all(44)
+	sb.set_border_width_all(6)
+	sb.set_corner_radius_all(26)
+	sb.set_content_margin_all(60)
 	panel.add_theme_stylebox_override("panel", sb)
 	center.add_child(panel)
 
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 18)
+	vb.add_theme_constant_override("separation", 26)
 	vb.alignment = BoxContainer.ALIGNMENT_CENTER
+	vb.custom_minimum_size = Vector2(760, 0)
 	panel.add_child(vb)
 
-	_complete_title = _make_label(vb, "LEVEL COMPLETE", 64)
+	_complete_title = _make_label(vb, "LEVEL COMPLETE", 96)
 	_complete_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_complete_title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
-	_complete_body = _make_label(vb, "", 32)
+	_complete_body = _make_label(vb, "", 46)
 	_complete_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
@@ -182,9 +183,12 @@ func set_enemies(count: int) -> void:
 	_enemies_label.text = "Enemies left: %d" % count
 
 
-func set_race(place: int, total: int) -> void:
+func set_race(place: int, total: int, lap: int = 0, laps: int = 1) -> void:
 	_race_label.visible = true
-	_race_label.text = "Position: %d / %d" % [place, total]
+	var txt := "Position: %d / %d" % [place, total]
+	if laps > 1:
+		txt = "Lap %d / %d   .   %s" % [lap, laps, txt]
+	_race_label.text = txt
 
 
 func show_message(title: String, body: String) -> void:
