@@ -8,6 +8,8 @@ signal finish_reached
 signal checkpoint_reached(pos: Vector3)
 signal hazard_hit
 
+var _road_side: int = 1
+
 
 func build(data: Dictionary) -> Vector3:
 	for c in get_children():
@@ -52,6 +54,11 @@ func _build_brick(b: Dictionary) -> void:
 		brick.rotation.z = deg_to_rad(float(b["rot"]))
 	if b.get("road", false):
 		_add_road_markings(brick, size)
+		# A roadside lamp post, alternating sides down the track.
+		var lamp := Decor.lamp_post()
+		lamp.position = Vector3(0, size.y * 0.5, (size.z * 0.5 - 0.7) * _road_side)
+		brick.add_child(lamp)
+		_road_side *= -1
 	add_child(brick)
 
 

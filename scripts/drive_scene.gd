@@ -120,6 +120,30 @@ func add_scenery(half: float, mountain: Color = Color(0.34, 0.46, 0.32), leaf: C
 		_cloud(Vector3(rng.randf_range(-half, half), rng.randf_range(40.0, 62.0), rng.randf_range(-half, half)), rng)
 
 
+func add_park_decor(half: float, accent: Color) -> void:
+	# Lego park dressing (no collision): lamp posts, flowers, arches, signs, statue.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 777
+	for i in 10:
+		var ang := TAU * float(i) / 10.0
+		var l := Decor.lamp_post()
+		l.position = Vector3(cos(ang) * half * 0.86, 0, sin(ang) * half * 0.86)
+		add_child(l)
+	for i in 18:
+		var fl := Decor.flower(Color.from_hsv(rng.randf(), 0.7, 1.0))
+		fl.position = Vector3(rng.randf_range(-half * 0.8, half * 0.8), 0, rng.randf_range(8.0, half * 0.8))
+		add_child(fl)
+	var a := Decor.arch(accent)
+	a.position = Vector3(0, 0, half * 0.62)
+	add_child(a)
+	var s := Decor.sign_post(accent)
+	s.position = Vector3(-half * 0.55, 0, half * 0.35)
+	add_child(s)
+	var st := Decor.statue(["#d2473b", "#3b86d2", "#e6b32e", "#5aa54a"])
+	st.position = Vector3(half * 0.55, 0, half * 0.35)
+	add_child(st)
+
+
 func _cone(pos: Vector3, radius: float, height: float, segs: int, color: Color) -> void:
 	var mi := MeshInstance3D.new()
 	var cm := CylinderMesh.new()

@@ -14,6 +14,7 @@ func _ready() -> void:
 	add_ground(Vector3(half * 2.0, 3, half * 2.0), Color("#6b7080"), true)
 	add_border(half - 2.0, half - 2.0, Color("#4f5460"))
 	add_scenery(half, Color("#4f7a3f"), Color(0.32, 0.62, 0.28), 20, true, false)
+	add_park_decor(half, Color("#c0c4cc"))
 
 	var owned := GameState.get_cars()
 	var n := owned.size()

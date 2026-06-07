@@ -20,6 +20,7 @@ func _ready() -> void:
 	add_border(half - 2.0, half - 2.0, Color("#4f5460"))
 	add_skyline(half, half, ["#6fae4f", "#d8a84e", "#19e0c8", "#ff7b29"], 16, 12345)
 	add_scenery(half, Color("#4f7a3f"), Color(0.32, 0.62, 0.28), 24, true, false)
+	add_park_decor(half, Color("#e6b32e"))
 
 	# World portals in a back row, each on a decorated pad.
 	var n := GameState.get_world_count()

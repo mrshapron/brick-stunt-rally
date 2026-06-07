@@ -28,6 +28,7 @@ func _ready() -> void:
 		int(theme.get("trees", 18)),
 		bool(theme.get("snow", true)),
 		bool(theme.get("dunes", false)))
+	add_park_decor(maxf(hx, hz), Color(theme.get("accent", "#e6b32e")))
 
 	# 10 gates laid out as two rows of five, each on a decorated pad.
 	for l in range(1, GameState.LEVELS_PER_WORLD + 1):
