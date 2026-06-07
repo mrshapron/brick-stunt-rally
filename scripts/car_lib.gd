@@ -16,6 +16,7 @@ static func catalog() -> Array:
 		{"name": "Neon Racer", "design": _car(7, 3, "#19e0c8", "#0f8f80", 1)},
 		{"name": "War Rig", "design": _car(6, 4, "#8a6b4a", "#5b4630", 2)},
 		{"name": "Rock Crawler", "design": _car(6, 5, "#6f7d6a", "#4a5648", 1)},
+		{"name": "Speedster X", "design": _car(8, 3, "#e23a6d", "#9e2048", 1)},
 	]
 
 

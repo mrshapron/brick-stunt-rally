@@ -17,6 +17,7 @@ var _complete_body: Label
 var _mute_button: Button
 var _hp_fill: ColorRect
 var _enemies_label: Label
+var _race_label: Label
 const HP_W: float = 220.0
 
 
@@ -51,6 +52,9 @@ func _ready() -> void:
 
 	_enemies_label = _make_label(stats, "", 22)
 	_enemies_label.visible = false
+	_race_label = _make_label(stats, "", 24)
+	_race_label.visible = false
+	_race_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.4))
 	_flip_label = _make_label(stats, "Flips  0", 22)
 
 	var hint := _make_label(self, "WASD/Arrows drive   .   Space/F fire   .   E get out / in car   .   R restart   .   M world map", 18)
@@ -152,6 +156,11 @@ func set_combat(count: int) -> void:
 
 func set_enemies(count: int) -> void:
 	_enemies_label.text = "Enemies left: %d" % count
+
+
+func set_race(place: int, total: int) -> void:
+	_race_label.visible = true
+	_race_label.text = "Position: %d / %d" % [place, total]
 
 
 func show_message(title: String, body: String) -> void:

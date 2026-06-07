@@ -13,6 +13,9 @@ var spawn_point: Vector3 = Vector3(0, 4, 0)
 var last_checkpoint: Vector3 = Vector3(0, 4, 0)
 var combat: bool = false
 var enemies_alive: int = 0
+var race: bool = false
+var _bots: Array = []
+var _finish_x: float = 0.0
 
 
 func _ready() -> void:
@@ -40,8 +43,40 @@ func _ready() -> void:
 	if combat:
 		_spawn_enemies(data.get("enemies", []))
 
+	race = data.get("race", false)
+	if race:
+		_setup_race(data)
+
 	Sfx.start_engine()
 	running = true
+
+
+func _setup_race(data: Dictionary) -> void:
+	_finish_x = float(data.get("finish_x", 100.0))
+	var lanes: Array = data.get("bots", [])
+	for bd in lanes:
+		var bot := Bot.new()
+		add_child(bot)
+		bot.configure(float(bd.get("speed", 16.0)), _finish_x, int(bd.get("car", 0)), float(bd.get("lane_z", 0.0)))
+		_bots.append(bot)
+	if hud:
+		hud.set_race(1, _bots.size() + 1)
+
+
+func _player_place() -> int:
+	var ahead := 0
+	for b in _bots:
+		if is_instance_valid(b) and b.position.x > vehicle.global_position.x:
+			ahead += 1
+	return ahead + 1
+
+
+func _ordinal(n: int) -> String:
+	match n:
+		1: return "1st"
+		2: return "2nd"
+		3: return "3rd"
+		_: return "%dth" % n
 
 
 func _spawn_enemies(list: Array) -> void:
@@ -80,6 +115,8 @@ func _process(_delta: float) -> void:
 	if is_instance_valid(vehicle):
 		if hud:
 			hud.update_hud(elapsed, vehicle.get_speed_kmh(), flips)
+			if race and not finished:
+				hud.set_race(_player_place(), _bots.size() + 1)
 		if not finished:
 			Sfx.set_engine_speed(vehicle.get_speed_kmh() / (vehicle.max_speed * 3.6))
 
@@ -128,7 +165,24 @@ func _on_hazard() -> void:
 
 
 func _on_finish() -> void:
-	_win()
+	if race:
+		_finish_race()
+	else:
+		_win()
+
+
+func _finish_race() -> void:
+	if finished:
+		return
+	var place := _player_place()
+	if place == 1:
+		_win()
+	else:
+		finished = true
+		running = false
+		Sfx.stop_engine()
+		if hud:
+			hud.show_message("You came %s" % _ordinal(place), "You need 1st place to win!\nPress R to retry   .   M for world map")
 
 
 func _win() -> void:

@@ -76,6 +76,20 @@ const WORLDS: Array = [
 		"dunes": false,
 		"climb": true,
 	},
+	{
+		"name": "Speedway",
+		"ground": "#454a55",
+		"accent": "#e8e84d",
+		"bricks": ["#d2473b", "#3b86d2", "#e6b32e"],
+		"sky_top": "#3a5a86",
+		"sky_horizon": "#bcd0e0",
+		"mountain": "#5a6a7a",
+		"foliage": "#3a8a2e",
+		"trees": 14,
+		"snow": false,
+		"dunes": false,
+		"race": true,
+	},
 ]
 
 var current_world: int = 0

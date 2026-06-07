@@ -18,6 +18,8 @@ static func generate(world: int, level: int, theme: Dictionary) -> Dictionary:
 		return _generate_combat(world, level, theme)
 	if theme.get("climb", false):
 		return _generate_climb(world, level, theme)
+	if theme.get("race", false):
+		return _generate_race(world, level, theme)
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = (world + 1) * 9973 + level * 131
@@ -132,6 +134,55 @@ static func generate(world: int, level: int, theme: Dictionary) -> Dictionary:
 		"finish": {"pos": [x + fin_len * 0.6, 3, 0], "size": [2.5, 8, DEPTH]},
 		"sky_top": theme.get("sky_top", "#4d86db"),
 		"sky_horizon": theme.get("sky_horizon", "#c7d6ea"),
+	}
+
+
+static func _generate_race(world: int, level: int, theme: Dictionary) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 6200 + level * 97
+
+	var ld := float(level) / 10.0
+	var ground: String = theme.get("ground", "#454a55")
+	var brick_cols: Array = theme.get("bricks", ["#d2473b", "#3b86d2", "#e6b32e"])
+
+	var track_len := 180.0 + level * 22.0
+	var width := 42.0
+
+	var bricks: Array = []
+	bricks.append({"size": [track_len + 30.0, 3, width], "pos": [track_len * 0.5, -1.5, 0], "color": ground, "kind": "static", "road": true})
+
+	# Obstacle blocks to weave around (more at higher levels).
+	var obstacles := 4 + level
+	for i in obstacles:
+		var ox := rng.randf_range(34.0, track_len - 30.0)
+		var oz := rng.randf_range(-16.0, 16.0)
+		bricks.append({"size": [2, 2, 2], "pos": [ox, 1.0, oz], "color": brick_cols[rng.randi() % brick_cols.size()], "kind": "destructible"})
+
+	# Opponent bots. More and faster as levels rise (easy early, hard late).
+	var bots: Array = []
+	var num := 3 + int(level / 3)
+	var base := lerpf(12.0, 21.0, ld)
+	var lanes := [-16.0, -11.0, -6.0, 6.0, 11.0, 16.0]
+	for i in num:
+		bots.append({
+			"speed": base + rng.randf_range(-1.0, 1.5) + i * 0.2,
+			"lane_z": lanes[i % lanes.size()],
+			"car": i % 8,
+		})
+
+	return {
+		"name": "%s  -  Race %d" % [theme.get("name", "Speedway"), level],
+		"spawn": [2, 4, 0],
+		"bricks": bricks,
+		"loops": [],
+		"props": [],
+		"checkpoints": [],
+		"race": true,
+		"bots": bots,
+		"finish_x": track_len,
+		"finish": {"pos": [track_len, 3, 0], "size": [2.5, 8, width]},
+		"sky_top": theme.get("sky_top", "#3a5a86"),
+		"sky_horizon": theme.get("sky_horizon", "#bcd0e0"),
 	}
 
 
