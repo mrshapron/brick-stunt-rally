@@ -59,8 +59,9 @@ func _setup_race(data: Dictionary) -> void:
 		var bd: Dictionary = lanes[i]
 		var bot := Bot.new()
 		add_child(bot)
-		# Staggered starting grid so they don't pile up.
-		bot.configure(float(bd.get("speed", 16.0)), _finish_x, int(bd.get("car", 0)), float(bd.get("lane_z", 0.0)), bool(bd.get("shoots", false)), -float(i % 3) * 4.0)
+		# Staggered starting grid so they don't pile up (unique x + z per bot).
+		var sx := float(bd.get("start_x", -6.0 - float(i) * 5.0))
+		bot.configure(float(bd.get("speed", 16.0)), _finish_x, int(bd.get("car", 0)), float(bd.get("lane_z", 0.0)), bool(bd.get("shoots", false)), sx)
 		_bots.append(bot)
 	if hud:
 		hud.set_race(1, _bots.size() + 1)

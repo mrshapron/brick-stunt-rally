@@ -178,16 +178,22 @@ static func _generate_race(world: int, level: int, theme: Dictionary) -> Diction
 		bricks.append({"size": [2, 2, 2], "pos": [ox, 1.0, oz], "color": brick_cols[rng.randi() % brick_cols.size()], "kind": "destructible"})
 
 	# Opponent bots. More and faster as levels rise (easy early, hard late).
-	# Spread across both sides of the track (player keeps the centre lane).
+	# Lay them out as a proper staggered starting grid: every bot gets a UNIQUE
+	# lane (z) and a UNIQUE row (x) set back from the player, so two cars can
+	# never share a spot or overlap at the line.
 	var bots: Array = []
 	var num := 3 + int(level / 3)
 	var base := lerpf(12.0, 21.0, ld)
+	var lane_step := 7.0
+	var max_lane := width * 0.5 - 4.0
 	for i in num:
 		var side := 1.0 if i % 2 == 0 else -1.0
-		var rank := i / 2
+		var rank := int(i / 2)
+		var lz: float = clampf(side * (lane_step * float(rank + 1)), -max_lane, max_lane)
 		bots.append({
 			"speed": base + rng.randf_range(-1.0, 1.5) + i * 0.2,
-			"lane_z": side * (5.0 + float(rank) * 6.0),
+			"lane_z": lz,
+			"start_x": -6.0 - float(i) * 5.0,
 			"car": i % 8,
 			"shoots": level >= 6,
 		})
