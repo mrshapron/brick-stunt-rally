@@ -62,6 +62,10 @@ func add_light_and_env(sky_top: Color = Color(0.28, 0.5, 0.86), sky_horizon: Col
 	light.light_color = Color(1.0, 0.96, 0.86)
 	light.light_energy = 1.4
 	light.shadow_enabled = true
+	# Single-split orthogonal shadows over a limited distance: much cheaper than
+	# the default 4-split cascade across the whole huge studded baseplate.
+	light.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	light.directional_shadow_max_distance = 70.0
 	add_child(light)
 
 	var sky_mat := ProceduralSkyMaterial.new()
@@ -82,7 +86,8 @@ func add_light_and_env(sky_top: Color = Color(0.28, 0.5, 0.86), sky_horizon: Col
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.glow_enabled = true
 	env.glow_intensity = 0.35
-	env.ssao_enabled = true
+	# SSAO is GPU-expensive for a subtle effect; off keeps the Mac cooler.
+	env.ssao_enabled = false
 	# Subtle distance haze so far mountains read with depth (sky stays vivid).
 	env.fog_enabled = true
 	env.fog_light_color = sky_horizon

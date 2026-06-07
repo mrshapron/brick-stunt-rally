@@ -77,7 +77,7 @@ static func _make_studs(size: Vector3, color: Color) -> MultiMeshInstance3D:
 	cyl.top_radius = STUD_RADIUS
 	cyl.bottom_radius = STUD_RADIUS
 	cyl.height = STUD_HEIGHT
-	cyl.radial_segments = 12
+	cyl.radial_segments = 8
 	var smat := StandardMaterial3D.new()
 	smat.albedo_color = color.lightened(0.08)
 	smat.roughness = 0.5
@@ -99,4 +99,7 @@ static func _make_studs(size: Vector3, color: Color) -> MultiMeshInstance3D:
 
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
+	# Studs are tiny bumps; skipping them in the shadow pass saves drawing
+	# thousands of cylinders into the shadow map for no visible difference.
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mmi

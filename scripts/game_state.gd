@@ -126,6 +126,10 @@ func _ready() -> void:
 	_setup_input()
 	_load()
 	_load_garage()
+	# Cap the framerate: on a 120 Hz (ProMotion) display the renderer would
+	# otherwise push twice the frames it needs, heating the machine. 60 fps is
+	# plenty for this arcade game and roughly halves GPU/CPU load.
+	Engine.max_fps = 60
 
 
 func _ensure_cars() -> void:
