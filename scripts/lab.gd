@@ -28,7 +28,7 @@ var _preview: ColorRect
 var _feedback: Label
 var _part: String = "block"
 var _part_label: Label
-var _part_btn: Button
+var _original: Array = []
 
 
 func _ready() -> void:
@@ -56,9 +56,8 @@ func _ready() -> void:
 	_ghost.visible = false
 	add_child(_ghost)
 
-	for v in GameState.get_car_design():
-		var kind: String = str(v[4]) if v.size() > 4 else "block"
-		_place(Vector3i(int(v[0]), int(v[1]), int(v[2])), Color(str(v[3])), kind)
+	_original = GameState.get_car_design().duplicate(true)
+	_rebuild_from(_original)
 
 	_camera = Camera3D.new()
 	_camera.fov = 55.0
@@ -234,11 +233,30 @@ func _mat(c: Color) -> StandardMaterial3D:
 	return m
 
 
-func _cycle_part() -> void:
-	var order := ["block", "wheel", "rocket"]
-	_part = order[(order.find(_part) + 1) % order.size()]
+func _set_part(p: String) -> void:
+	_part = p
 	if _part_label:
 		_part_label.text = "Placing: " + _part.to_upper()
+
+
+func _cycle_part() -> void:
+	var order := ["block", "wheel", "rocket"]
+	_set_part(order[(order.find(_part) + 1) % order.size()])
+
+
+func _rebuild_from(design: Array) -> void:
+	for cell in _blocks.keys():
+		_blocks[cell].queue_free()
+	_blocks.clear()
+	for v in design:
+		var kind: String = str(v[4]) if v.size() > 4 else "block"
+		_place(Vector3i(int(v[0]), int(v[1]), int(v[2])), Color(str(v[3])), kind)
+
+
+func _on_reset() -> void:
+	_rebuild_from(_original)
+	if _feedback:
+		_feedback.text = "Reset to start"
 
 
 func _remove(cell: Vector3i) -> void:
@@ -319,23 +337,32 @@ func _build_ui() -> void:
 	layer.add_child(col)
 	_part_label = Label.new()
 	_part_label.text = "Placing: BLOCK"
-	_part_label.add_theme_font_size_override("font_size", 26)
+	_part_label.add_theme_font_size_override("font_size", 24)
 	_part_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	_part_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	_part_label.add_theme_constant_override("outline_size", 4)
-	_part_btn = Button.new()
-	_part_btn.text = "Switch: Block -> Wheel -> Rocket"
-	_part_btn.custom_minimum_size = Vector2(230, 56)
-	_part_btn.add_theme_font_size_override("font_size", 20)
-	_part_btn.pressed.connect(_cycle_part)
 	col.add_child(_part_label)
-	col.add_child(_part_btn)
+
+	# Part templates to pick from.
+	var parts_row := HBoxContainer.new()
+	parts_row.add_theme_constant_override("separation", 6)
+	for entry in [["Block", "block"], ["Wheel", "wheel"], ["Rocket", "rocket"]]:
+		var pb := Button.new()
+		pb.text = entry[0]
+		pb.custom_minimum_size = Vector2(74, 48)
+		pb.focus_mode = Control.FOCUS_NONE
+		pb.add_theme_font_size_override("font_size", 18)
+		pb.pressed.connect(_set_part.bind(entry[1]))
+		parts_row.add_child(pb)
+	col.add_child(parts_row)
+
 	_preview = ColorRect.new()
-	_preview.custom_minimum_size = Vector2(230, 36)
+	_preview.custom_minimum_size = Vector2(230, 34)
 	_preview.color = Color(COLORS[_selected])
 	col.add_child(_preview)
 	_add_button(col, "Save", _on_save)
 	_add_button(col, "Clear", _on_clear)
+	_add_button(col, "Reset car", _on_reset)
 	_add_button(col, "Drive it!", _on_drive)
 	_add_button(col, "Back (M)", _on_back)
 	_feedback = _label(col, "", 24)
