@@ -97,4 +97,8 @@ If you poke around and find a way to make the cars feel even better, I'm all ear
 - A bit of music
 - Camera shake on the big explosions because why not
 
+The UI uses the [Bangers](https://fonts.google.com/specimen/Bangers) font
+(SIL Open Font License) for that comic, kid-friendly vibe - the only outside
+asset in the whole project.
+
 Thanks for checking it out. It was a blast to build. 🚀

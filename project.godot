@@ -19,6 +19,10 @@ Sfx="*res://scripts/sfx.gd"
 
 file_logging/enable_file_logging=true
 
+[gui]
+
+theme/custom="res://ui/game_theme.tres"
+
 [physics]
 
 3d/default_gravity=14.0
