@@ -47,8 +47,11 @@ func _ready() -> void:
 	mass = 4.0
 	_build_from_design()
 	_build_launchers()
-	axis_lock_angular_x = true
-	axis_lock_angular_z = true
+	# Pitch/roll are free so the chassis tilts to follow the ground (real
+	# suspension feel); yaw is driven directly for arcade steering.
+	axis_lock_angular_x = false
+	axis_lock_angular_z = false
+	angular_damp = 1.5
 	can_sleep = false
 	contact_monitor = true
 	max_contacts_reported = 6
@@ -214,7 +217,9 @@ func _physics_process(delta: float) -> void:
 		move = move.normalized()
 
 	_grounded = false
-	var up := Vector3.UP
+	# Suspension pushes along the car's own up axis so the four corner wheels
+	# settle the body parallel to the surface it's resting on.
+	var up := global_transform.basis.y
 	for i in _wheels.size():
 		var ray := _wheels[i]
 		ray.force_raycast_update()
@@ -235,25 +240,35 @@ func _physics_process(delta: float) -> void:
 		else:
 			mesh.position.y = lerpf(mesh.position.y, -suspension_rest, clampf(delta * 10.0, 0.0, 1.0))
 
-	# Tire lateral friction: cancel sideways velocity so the car grips and
-	# tracks its heading instead of sliding. Only applies with wheels down.
+	# Tire lateral friction: cancel sideways (horizontal) velocity so the car
+	# grips and tracks its heading instead of sliding. Only with wheels down.
 	if _grounded:
 		var side := global_transform.basis.z
-		var lateral := side.dot(linear_velocity)
-		linear_velocity -= side * (lateral * tire_grip)
+		side.y = 0.0
+		if side.length() > 0.01:
+			side = side.normalized()
+			var lateral := side.dot(linear_velocity)
+			linear_velocity -= side * (lateral * tire_grip)
 
 	var hvel := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
+	# Current heading from the forward axis (robust while the body is tilted).
+	var fwd := global_transform.basis.x
+	var cur_yaw := atan2(-fwd.z, fwd.x)
 
 	if _grounded:
 		if move.length() > 0.05:
 			if hvel.length() < max_speed:
 				apply_central_force(move * engine_accel * mass)
 			var target_yaw := atan2(-move.z, move.x)
-			var diff := wrapf(target_yaw - rotation.y, -PI, PI)
+			var diff := wrapf(target_yaw - cur_yaw, -PI, PI)
 			angular_velocity.y = diff * turn_speed
 		else:
 			angular_velocity.y = 0.0
 			apply_central_force(-hvel * rolling_resistance * mass)
+	else:
+		# Airborne: gently right the car so it lands wheels-down.
+		var corr := up.cross(Vector3.UP)
+		apply_torque(corr * 8.0 * mass)
 
 	_spin_wheels(hvel.length(), delta)
 
