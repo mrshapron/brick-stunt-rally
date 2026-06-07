@@ -176,17 +176,20 @@ func _flat_box(pos: Vector3, size: Vector3, color: Color) -> void:
 
 
 func add_hill(cx: float, cz: float, height: float, color: Color) -> float:
-	# A stepped lego mound the car can drive up; returns the flat-top height.
-	var step := 0.45
-	var steps := maxi(1, int(round(height / step)))
-	for i in steps:
-		var t := float(i) / float(steps)
-		var w := lerpf(22.0, 11.0, t)
-		var h := float(i + 1) * step
-		var box := BrickFactory.make_brick(Vector3(w, h, w), color, "static", false)
-		box.position = Vector3(cx, h * 0.5, cz)
-		add_child(box)
-	return float(steps) * step
+	# A flat-top platform with a gentle ramp road leading up the +Z (approach)
+	# side, so the car can drive up easily. Returns the flat-top height.
+	var plat_w := 16.0
+	var plat := BrickFactory.make_brick(Vector3(plat_w, height + 4.0, plat_w), color, "static", false)
+	plat.position = Vector3(cx, height - (height + 4.0) * 0.5, cz)
+	add_child(plat)
+
+	var angle := 17.0
+	var length := height / tan(deg_to_rad(angle))
+	var ramp := BrickFactory.make_wedge(Vector3(length, height, 11.0), color.darkened(0.06))
+	ramp.rotation.y = PI * 0.5
+	ramp.position = Vector3(cx, height * 0.5 - 0.05, cz + plat_w * 0.5 + length * 0.5)
+	add_child(ramp)
+	return height
 
 
 func add_park_decor(half: float, accent: Color) -> void:
