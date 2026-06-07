@@ -12,12 +12,16 @@ extends CharacterBody3D
 var controlled: bool = true
 var _model: Node3D
 var _walk_t: float = 0.0
+var _legs: Array = []
+var _arms: Array = []
 
 
 func _ready() -> void:
 	add_to_group("player")
 	_model = Minifig.build(1.0)
 	add_child(_model)
+	_legs = _model.get_meta("legs", [])
+	_arms = _model.get_meta("arms", [])
 
 	var cs := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
@@ -49,12 +53,28 @@ func _physics_process(delta: float) -> void:
 	velocity.z = dir.z * speed
 	move_and_slide()
 
+	var moving := dir.length() > 0.05 and is_on_floor()
 	if dir.length() > 0.05:
 		var target_yaw := atan2(dir.x, dir.z)
 		rotation.y = lerp_angle(rotation.y, target_yaw, clampf(turn_speed * delta, 0.0, 1.0))
-		# simple walk bob
-		_walk_t += delta * 12.0
+	_animate_walk(moving, delta)
+
+
+func _animate_walk(moving: bool, delta: float) -> void:
+	if moving:
+		_walk_t += delta * 9.0
+		var s := sin(_walk_t)
 		if _model:
-			_model.position.y = absf(sin(_walk_t)) * 0.08
-	elif _model:
-		_model.position.y = lerpf(_model.position.y, 0.0, clampf(delta * 8.0, 0.0, 1.0))
+			_model.position.y = absf(s) * 0.07
+		if _legs.size() == 2:
+			_legs[0].rotation.x = s * 0.7
+			_legs[1].rotation.x = -s * 0.7
+		if _arms.size() == 2:
+			_arms[0].rotation.x = -s * 0.5
+			_arms[1].rotation.x = s * 0.5
+	else:
+		var w := clampf(delta * 9.0, 0.0, 1.0)
+		if _model:
+			_model.position.y = lerpf(_model.position.y, 0.0, w)
+		for limb in _legs + _arms:
+			limb.rotation.x = lerp_angle(limb.rotation.x, 0.0, w)
