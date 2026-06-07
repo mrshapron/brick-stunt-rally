@@ -485,20 +485,20 @@ func make_gate(pos: Vector3, size: Vector3, color: Color, label_text: String, su
 
 	var label := Label3D.new()
 	label.text = label_text
-	label.font_size = 220
-	label.pixel_size = 0.03
-	label.position = Vector3(0, size.y * 0.5 + 3.0, 0)
+	label.font_size = 200
+	label.pixel_size = 0.02
+	label.position = Vector3(0, size.y * 0.5 + 5.0, 0)
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.outline_size = 28
+	label.outline_size = 26
 	label.no_depth_test = true
 	area.add_child(label)
 
 	if sub_text != "":
 		var sub := Label3D.new()
 		sub.text = sub_text
-		sub.font_size = 120
-		sub.pixel_size = 0.022
-		sub.position = Vector3(0, size.y * 0.5 + 1.5, 0)
+		sub.font_size = 110
+		sub.pixel_size = 0.014
+		sub.position = Vector3(0, size.y * 0.5 + 1.8, 0)
 		sub.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		sub.no_depth_test = true
 		sub.modulate = Color(1, 1, 1, 0.9)
