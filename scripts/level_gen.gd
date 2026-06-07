@@ -166,6 +166,9 @@ static func _generate_race(world: int, level: int, theme: Dictionary) -> Diction
 
 	var bricks: Array = []
 	bricks.append({"size": [track_len + 30.0, 3, width], "pos": [track_len * 0.5, -1.5, 0], "color": ground, "kind": "static", "road": true})
+	# Side guard rails so racers can't get bumped off the track.
+	for sz in [width * 0.5, -width * 0.5]:
+		bricks.append({"size": [track_len + 30.0, 2.0, 1.4], "pos": [track_len * 0.5, 1.0, sz], "color": theme.get("accent", "#e8e84d"), "kind": "static"})
 
 	# Obstacle blocks to weave around (more at higher levels).
 	var obstacles := 4 + level

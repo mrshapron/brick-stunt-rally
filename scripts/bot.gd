@@ -15,7 +15,7 @@ var _cd: float = 0.0
 var _player: Node3D
 
 
-func configure(spd: float, finish_x: float, car_index: int, lane_z: float, can_shoot: bool) -> void:
+func configure(spd: float, finish_x: float, car_index: int, lane_z: float, can_shoot: bool, start_x: float = 0.0) -> void:
 	sync_to_physics = true
 	speed = spd
 	_finish_x = finish_x
@@ -24,7 +24,7 @@ func configure(spd: float, finish_x: float, car_index: int, lane_z: float, can_s
 	_can_shoot = can_shoot
 	_cd = randf_range(1.5, 3.0)
 	add_to_group("racer")
-	position = Vector3(0, 0.0, lane_z)
+	position = Vector3(start_x, 0.0, lane_z)
 
 	var disp := CarLib.build_display(CarLib.design(car_index))
 	add_child(disp)
@@ -54,9 +54,11 @@ func _physics_process(delta: float) -> void:
 	# sideways (a racing jostle) so they never merge.
 	if is_instance_valid(_player):
 		var d := _player.global_position - global_position
-		if absf(d.x) < 3.0 and absf(d.z) < 2.6 and _player.has_method("apply_central_impulse"):
-			var pushz := 1.0 if d.z >= 0.0 else -1.0
-			_player.apply_central_impulse(Vector3(0.0, 0.0, pushz) * 5.0)
+		if absf(d.x) < 3.4 and absf(d.z) < 2.6 and _player.has_method("apply_central_impulse"):
+			var pdir := Vector3(d.x, 0.0, d.z)
+			if pdir.length() < 0.1:
+				pdir = Vector3(0, 0, 1)
+			_player.apply_central_impulse(pdir.normalized() * 5.0)
 
 	if _can_shoot and not finished and is_instance_valid(_player):
 		_cd -= delta
