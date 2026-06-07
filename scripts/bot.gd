@@ -50,6 +50,14 @@ func _physics_process(delta: float) -> void:
 	for w in _wheels:
 		w.rotate_object_local(Vector3.UP, v * delta / 0.34)
 
+	# Keep cars from overlapping: if the player is on top of us, shove it out
+	# sideways (a racing jostle) so they never merge.
+	if is_instance_valid(_player):
+		var d := _player.global_position - global_position
+		if absf(d.x) < 3.0 and absf(d.z) < 2.6 and _player.has_method("apply_central_impulse"):
+			var pushz := 1.0 if d.z >= 0.0 else -1.0
+			_player.apply_central_impulse(Vector3(0.0, 0.0, pushz) * 5.0)
+
 	if _can_shoot and not finished and is_instance_valid(_player):
 		_cd -= delta
 		if _cd <= 0.0:
