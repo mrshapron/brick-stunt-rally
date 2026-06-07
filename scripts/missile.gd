@@ -15,9 +15,16 @@ func setup(dir: Vector3, dmg: float) -> void:
 
 
 func _ready() -> void:
-	# Point the rocket's +X (nose) along the travel direction.
+	# Point the rocket's +X (nose) along the full 3D travel direction, so it
+	# tilts up/down with the turret aim instead of staying flat.
 	if velocity.length() > 0.01:
-		rotation.y = atan2(-velocity.z, velocity.x)
+		var x := velocity.normalized()
+		var ref := Vector3.UP
+		if absf(x.dot(ref)) > 0.999:
+			ref = Vector3.RIGHT
+		var z := x.cross(ref).normalized()
+		var y := z.cross(x).normalized()
+		transform.basis = Basis(x, y, z)
 
 	var cs := CollisionShape3D.new()
 	var sp := SphereShape3D.new()
