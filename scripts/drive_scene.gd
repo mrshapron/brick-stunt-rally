@@ -125,8 +125,8 @@ func add_city(half: float, building_colors: Array) -> void:
 	# with painted lines, and a few speed bumps. Keeps the portal row clear.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 909
-	for i in 13:
-		var ang := TAU * float(i) / 13.0 + rng.randf() * 0.25
+	for i in 18:
+		var ang := TAU * float(i) / 18.0 + rng.randf() * 0.22
 		var rad := half * rng.randf_range(0.6, 0.85)
 		var pos := Vector3(cos(ang) * rad, 0, sin(ang) * rad)
 		if pos.z < -42.0:
@@ -173,6 +173,20 @@ func _flat_box(pos: Vector3, size: Vector3, color: Color) -> void:
 	mi.position = pos
 	mi.material_override = _flat(color)
 	add_child(mi)
+
+
+func add_hill(cx: float, cz: float, height: float, color: Color) -> float:
+	# A stepped lego mound the car can drive up; returns the flat-top height.
+	var step := 0.45
+	var steps := maxi(1, int(round(height / step)))
+	for i in steps:
+		var t := float(i) / float(steps)
+		var w := lerpf(22.0, 11.0, t)
+		var h := float(i + 1) * step
+		var box := BrickFactory.make_brick(Vector3(w, h, w), color, "static", false)
+		box.position = Vector3(cx, h * 0.5, cz)
+		add_child(box)
+	return float(steps) * step
 
 
 func add_park_decor(half: float, accent: Color) -> void:

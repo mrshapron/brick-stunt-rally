@@ -5,6 +5,8 @@ extends DriveScene
 const ENTER_TIME := 2.0
 const LAB := -10
 const PARK := -11
+# Some worlds sit up on hills (height per world index; 0 = on the ground).
+const HILLS := [0.0, 0.0, 5.0, 0.0, 9.0, 0.0, 4.0]
 
 var _near := -1
 var _near_gate: Node3D
@@ -21,6 +23,10 @@ func _ready() -> void:
 	add_city(half, ["#c64b3a", "#3b86d2", "#e6b32e", "#5aa54a", "#b06bff", "#e08a2a", "#cfd2da"])
 	add_scenery(half, Color("#4f7a3f"), Color(0.32, 0.62, 0.28), 22, true, false)
 	add_park_decor(half, Color("#e6b32e"))
+	for fpos in [Vector3(48, 0, -8), Vector3(-48, 0, -8)]:
+		var f := Decor.fountain()
+		f.position = fpos
+		add_child(f)
 
 	# World portals in a back row, each on a decorated pad.
 	var n := GameState.get_world_count()
@@ -30,8 +36,12 @@ func _ready() -> void:
 		var color := Color(w.get("accent", "#e6b32e"))
 		var sub := "%d/%d done" % [done, GameState.LEVELS_PER_WORLD]
 		var px := -float(n - 1) * 30.0 * 0.5 + i * 30.0
-		var pos := Vector3(px, 3.5, -62)
-		add_pad(Vector3(pos.x, 0.15, pos.z), Vector3(13, 0.3, 13), color.darkened(0.15))
+		var hh: float = HILLS[i] if i < HILLS.size() else 0.0
+		var top := 0.0
+		if hh > 0.0:
+			top = add_hill(px, -62.0, hh, color.darkened(0.12))
+		var pos := Vector3(px, top + 3.5, -62)
+		add_pad(Vector3(pos.x, top + 0.15, pos.z), Vector3(13, 0.3, 13), color.darkened(0.15))
 		var gate := make_gate(pos, Vector3(6, 7, 6), color,
 			str(w.get("name", "World")), sub, "portal")
 		gate.body_entered.connect(_on_near.bind(gate, i))

@@ -96,6 +96,22 @@ static func speed_bump(length: float, color: Color = Color(0.9, 0.78, 0.25)) -> 
 	return body
 
 
+static func fountain() -> Node3D:
+	var r := Node3D.new()
+	var s := 6.0
+	var stone := Color("#bcbcc4")
+	var water := Color("#3ba0e0")
+	_box(r, Vector3(s, 0.8, 0.4), Vector3(0, 0.4, s * 0.5), stone)
+	_box(r, Vector3(s, 0.8, 0.4), Vector3(0, 0.4, -s * 0.5), stone)
+	_box(r, Vector3(0.4, 0.8, s), Vector3(s * 0.5, 0.4, 0), stone)
+	_box(r, Vector3(0.4, 0.8, s), Vector3(-s * 0.5, 0.4, 0), stone)
+	_box(r, Vector3(s - 0.4, 0.5, s - 0.4), Vector3(0, 0.5, 0), water, 0.3)
+	_box(r, Vector3(0.8, 2.0, 0.8), Vector3(0, 1.5, 0), stone)
+	_box(r, Vector3(2.2, 0.4, 2.2), Vector3(0, 2.6, 0), stone)
+	_box(r, Vector3(1.2, 0.4, 1.2), Vector3(0, 2.95, 0), water, 0.3)
+	return r
+
+
 static func _box(parent: Node, size: Vector3, pos: Vector3, color: Color, emissive: float = 0.0) -> void:
 	var mi := MeshInstance3D.new()
 	var b := BoxMesh.new()
