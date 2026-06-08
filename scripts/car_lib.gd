@@ -1,23 +1,20 @@
 class_name CarLib
 extends RefCounted
-## A library of preset car designs (voxel lists) and a visual display builder
-## used by the Parking lot. Designs use the same [x,y,z,"#hex",kind] format as
-## the Laboratory (kinds: block / wheel / rocket).
-
-const SCALE := 0.55
+## Preset cars and the display builder. Designs are lists of LEGO part records
+## (see brick_part.gd). Used by the garage, AI opponents, and reward screen.
 
 
 static func catalog() -> Array:
 	return [
-		{"name": "Red Roadster", "design": _car(6, 3, "#c43a2a", "#7f241b", 1)},
-		{"name": "Blue Bolt", "design": _car(7, 3, "#2f6fb0", "#1d4e85", 1)},
-		{"name": "Yellow Hauler", "design": _car(6, 4, "#e0a740", "#a8742a", 1)},
-		{"name": "Green Buggy", "design": _car(5, 3, "#5aa54a", "#356b2c", 1)},
-		{"name": "Neon Racer", "design": _car(7, 3, "#19e0c8", "#0f8f80", 1)},
-		{"name": "War Rig", "design": _car(6, 4, "#8a6b4a", "#5b4630", 2)},
-		{"name": "Rock Crawler", "design": _car(6, 5, "#6f7d6a", "#4a5648", 1)},
-		{"name": "Speedster X", "design": _car(8, 3, "#e23a6d", "#9e2048", 1)},
-		{"name": "Safari Truck", "design": _car(7, 4, "#c2b25a", "#7a6a2a", 1)},
+		{"name": "Red Roadster", "design": _car(12, 6, "#c43a2a", "#7f241b", "#1a1a1a", 1)},
+		{"name": "Blue Bolt", "design": _car(13, 6, "#2f6fb0", "#1d4e85", "#e6e6e6", 1)},
+		{"name": "Yellow Hauler", "design": _car(12, 7, "#e0a740", "#a8742a", "#1a1a1a", 1)},
+		{"name": "Green Buggy", "design": _car(11, 6, "#5aa54a", "#356b2c", "#1a1a1a", 1)},
+		{"name": "Neon Racer", "design": _car(13, 6, "#19e0c8", "#0f8f80", "#141414", 1)},
+		{"name": "War Rig", "design": _car(12, 7, "#8a6b4a", "#5b4630", "#caa040", 2)},
+		{"name": "Rock Crawler", "design": _car(11, 7, "#6f7d6a", "#4a5648", "#1a1a1a", 1)},
+		{"name": "Speedster X", "design": _car(14, 6, "#e23a6d", "#9e2048", "#141414", 1)},
+		{"name": "Safari Truck", "design": _car(12, 7, "#c2b25a", "#7a6a2a", "#5b4630", 1)},
 	]
 
 
@@ -31,96 +28,62 @@ static func car_name(index: int) -> String:
 	return cat[clampi(index, 0, cat.size() - 1)]["name"]
 
 
-static func _car(lx: int, lz: int, base: String, cab: String, rockets: int) -> Array:
+static func _car(length: int, width: int, base: String, cab: String, accent: String, rockets: int) -> Array:
+	# A sleek studded car: full-footprint lower body, an accent beltline, a
+	# smooth tiled hood/trunk, an inset cabin with sloped windscreens and a tiled
+	# roof, wheels at the corners, and roof rockets.
 	var d: Array = []
-	for x in lx:
-		for z in lz:
-			var corner: bool = (x == 0 or x == lx - 1) and (z == 0 or z == lz - 1)
-			if corner:
-				d.append([x, 0, z, "#161616", "wheel"])
-			else:
-				d.append([x, 0, z, base, "block"])
-	for x in range(1, lx - 1):
-		for z in lz:
-			d.append([x, 1, z, cab, "block"])
-	var mid := int(lz / 2)
+	var L := length
+	var W := width
+	var cl: int = maxi(L - 6, 2)
+
+	# Wheels (2x2) at the four corners.
+	for wx in [1, L - 3]:
+		d.append(BrickPart.make("wheel", wx, 0, 0, 2, 2, "#161616"))
+		d.append(BrickPart.make("wheel", wx, 0, W - 2, 2, 2, "#161616"))
+
+	# Lower body (3 plates) + accent beltline plate on top.
+	d.append(BrickPart.make("brick", 0, 1, 0, L, W, base))
+	d.append(BrickPart.make("plate", 0, 4, 0, L, W, accent))
+
+	# Smooth hood + trunk.
+	d.append(BrickPart.make("tile", 0, 5, 0, 2, W, base))
+	d.append(BrickPart.make("tile", L - 2, 5, 0, 2, W, base))
+
+	# Cabin (inset), sloped windscreens front and back, smooth roof.
+	d.append(BrickPart.make("brick", 3, 5, 1, cl, W - 2, cab))
+	d.append(BrickPart.make("slope", 2, 5, 1, 1, W - 2, cab, 3, 0))
+	d.append(BrickPart.make("slope", L - 3, 5, 1, 1, W - 2, cab, 3, 180))
+	d.append(BrickPart.make("tile", 3, 8, 1, cl, W - 2, cab))
+
+	# Rocket(s) on the roof.
+	var midz: int = int(W / 2) - 1
 	for r in rockets:
-		d.append([2 + r * 2, 2, mid, "#cccccc", "rocket"])
+		d.append(BrickPart.make("rocket", 4 + r * 3, 9, midz, 2, 1, "#cccccc"))
 	return d
 
 
 static func build_display(design_arr: Array) -> Node3D:
-	# Visual-only model that sits on its wheels (body lifted, wheels dropped) with
-	# its lowest point at y=0 - so callers can place the root right on the ground.
-	# Exposes the wheel MeshInstances via meta("wheels") so they can be spun.
+	# Visual-only model sitting on its wheels with its lowest point at y=0, so
+	# callers can drop the root on the ground. Wheels exposed via meta("wheels").
 	var root := Node3D.new()
 	var wheels: Array = []
-	var mnx := 99.0
-	var mnz := 99.0
-	var mxx := -99.0
-	var mxz := -99.0
-	for v in design_arr:
-		mnx = minf(mnx, float(v[0]))
-		mxx = maxf(mxx, float(v[0]))
-		mnz = minf(mnz, float(v[2]))
-		mxz = maxf(mxz, float(v[2]))
-	if mnx > mxx:
-		mnx = 0.0
-		mxx = 0.0
-		mnz = 0.0
-		mxz = 0.0
-	var cx := (mnx + mxx) * 0.5
-	var cz := (mnz + mxz) * 0.5
-	var min_bottom := 999.0
+	var aabb := BrickPart.design_aabb(design_arr)
+	var cx := aabb.position.x + aabb.size.x * 0.5
+	var cz := aabb.position.z + aabb.size.z * 0.5
+	var min_bottom := 1.0e9
 
-	for v in design_arr:
-		var kind: String = str(v[4]) if v.size() > 4 else "block"
-		var color := Color(str(v[3])) if v.size() > 3 else Color(0.8, 0.3, 0.25)
-		var local := Vector3((float(v[0]) - cx) * SCALE, float(v[1]) * SCALE, (float(v[2]) - cz) * SCALE)
-		if kind == "wheel":
-			local.y -= 0.18
-			var w := MeshInstance3D.new()
-			var cyl := CylinderMesh.new()
-			cyl.top_radius = 0.34
-			cyl.bottom_radius = 0.34
-			cyl.height = 0.3
-			cyl.radial_segments = 16
-			w.mesh = cyl
-			w.rotation_degrees = Vector3(90, 0, 0)
-			w.position = local
-			w.material_override = _mat(Color(0.08, 0.08, 0.1))
-			root.add_child(w)
-			wheels.append(w)
-			min_bottom = minf(min_bottom, local.y - 0.34)
-		elif kind == "rocket":
-			local.y += 0.3
-			var t := MeshInstance3D.new()
-			var b := BoxMesh.new()
-			b.size = Vector3(0.5, 0.2, 0.2)
-			t.mesh = b
-			t.position = local
-			t.material_override = _mat(Color(0.7, 0.7, 0.75))
-			root.add_child(t)
-		else:
-			local.y += 0.18
-			var mi := MeshInstance3D.new()
-			var bm := BoxMesh.new()
-			bm.size = Vector3.ONE * SCALE * 0.92
-			mi.mesh = bm
-			mi.position = local
-			mi.material_override = _mat(color)
-			root.add_child(mi)
-			min_bottom = minf(min_bottom, local.y - SCALE * 0.46)
+	for rec in design_arr:
+		var node := BrickPart.build_part(rec)
+		var c := BrickPart.center_world(rec)
+		node.position = Vector3(c.x - cx, c.y, c.z - cz)
+		root.add_child(node)
+		if str(rec.get("t", "brick")) == "wheel" and node.get_child_count() > 0:
+			wheels.append(node.get_child(0))
+		min_bottom = minf(min_bottom, node.position.y - BrickPart.part_h(rec) * BrickPart.PLATE * 0.5)
 
-	if min_bottom < 900.0:
+	if min_bottom < 0.9e9:
 		for child in root.get_children():
 			child.position.y -= min_bottom
 	root.set_meta("wheels", wheels)
 	return root
-
-
-static func _mat(c: Color) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.albedo_color = c
-	m.roughness = 0.5
-	return m

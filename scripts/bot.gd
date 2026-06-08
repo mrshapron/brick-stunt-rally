@@ -135,7 +135,7 @@ func _physics_process(delta: float) -> void:
 	position = Vector3(w.x, sin(_s * 0.6 + _wobble) * 0.04, w.y)
 	rotation.y = atan2(-dir.y, dir.x)
 	for wheel in _wheels:
-		wheel.rotate_object_local(Vector3.UP, v * delta / 0.34)
+		wheel.rotate_z(-v * delta / 0.34)
 
 	if _can_shoot and not finished and is_instance_valid(_player):
 		_cd -= delta

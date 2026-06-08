@@ -34,7 +34,8 @@ signal died
 @export var turret_pitch_speed: float = 1.6
 
 var _wheels: Array[RayCast3D] = []
-var _wheel_meshes: Array[MeshInstance3D] = []
+var _wheel_meshes: Array[Node3D] = []
+var _wheel_spins: Array[Node3D] = []
 var _grounded: bool = false
 var _boost_timer: float = 0.0
 var _dust: CPUParticles3D
@@ -79,68 +80,51 @@ func _ready() -> void:
 
 
 func _build_from_design() -> void:
-	# Build the body from the player's Laboratory design. Each voxel has a kind:
-	# "block" (body), "wheel" (a driving wheel) or "rocket" (a missile launcher).
+	# Build the body from the player's Laboratory design (LEGO part records).
+	# Visuals come from BrickPart; collision is a single body box (fast + stable)
+	# and the wheels are raycast suspension at the design's wheel parts.
 	var design := GameState.get_car_design()
-	var scale := 0.55
+	var aabb := BrickPart.design_aabb(design)
+	if aabb.size.length() < 0.01:
+		aabb = AABB(Vector3.ZERO, Vector3.ONE)
+	var center := aabb.position + aabb.size * 0.5
+	_top_y = aabb.size.y * 0.5
 
-	var mn := Vector3(99, 99, 99)
-	var mx := Vector3(-99, -99, -99)
-	for v in design:
-		var c := Vector3(float(v[0]), float(v[1]), float(v[2]))
-		mn = Vector3(minf(mn.x, c.x), minf(mn.y, c.y), minf(mn.z, c.z))
-		mx = Vector3(maxf(mx.x, c.x), maxf(mx.y, c.y), maxf(mx.z, c.z))
-	if mn.x > mx.x:
-		mn = Vector3.ZERO
-		mx = Vector3.ZERO
-	var center := (mn + mx) * 0.5
-	var dim := (mx - mn + Vector3.ONE) * scale
-	_top_y = dim.y * 0.5
-
-	# Remove the placeholder collider; we build one collider per solid brick so
-	# the car's collision matches exactly what was built.
 	$CollisionShape3D.queue_free()
 
 	var wheel_cells: Array[Vector3] = []
-	var collider_count := 0
-	for v in design:
-		var cell := Vector3(float(v[0]), float(v[1]), float(v[2]))
-		var local := (cell - center) * scale
-		var kind: String = str(v[4]) if v.size() > 4 else "block"
-		var col := Color(str(v[3])) if v.size() > 3 else Color(0.8, 0.3, 0.25)
-		if kind == "wheel":
+	for rec in design:
+		var t := str(rec.get("t", "brick"))
+		var local := BrickPart.center_world(rec) - center
+		if t == "wheel":
 			wheel_cells.append(local)
-		elif kind == "rocket":
+			continue
+		var node := BrickPart.build_part(rec)
+		node.position = local
+		_chassis.add_child(node)
+		if t == "rocket":
 			_launchers.append(local)
-			_add_launcher_mesh(local)
-			_add_collider(local, scale)
-			collider_count += 1
-		else:
-			var mi := MeshInstance3D.new()
-			var bm := BoxMesh.new()
-			bm.size = Vector3.ONE * scale * 0.92
-			mi.mesh = bm
-			mi.position = local
-			var m := StandardMaterial3D.new()
-			m.albedo_color = col
-			m.roughness = 0.5
-			mi.material_override = m
-			_chassis.add_child(mi)
-			_add_collider(local, scale)
-			collider_count += 1
 
-	if collider_count == 0:
-		_add_collider(Vector3.ZERO, scale)
+	# One simplified body collider from the non-wheel bounds.
+	var body := BrickPart.design_aabb(design, true)
+	if body.size.length() < 0.01:
+		body = aabb
+	var cs := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = body.size * 0.96
+	cs.shape = bs
+	cs.position = (body.position + body.size * 0.5) - center
+	add_child(cs)
 
 	_driver = Minifig.build(0.7)
-	_driver.position = Vector3(0, dim.y * 0.5 - 0.7, -0.1)
+	_driver.position = Vector3(0, aabb.size.y * 0.5 - 0.7, -0.1)
 	_chassis.add_child(_driver)
 
 	# Wheels: use placed wheel parts if any, else auto 4 corners.
 	if wheel_cells.is_empty():
-		var hx := maxf(dim.x * 0.5 - 0.3, 0.5)
-		var hz := maxf(dim.z * 0.5 - 0.2, 0.4)
-		var by := -dim.y * 0.5 + 0.1
+		var hx := maxf(aabb.size.x * 0.5 - 0.3, 0.5)
+		var hz := maxf(aabb.size.z * 0.5 - 0.2, 0.4)
+		var by := -aabb.size.y * 0.5 + 0.1
 		for wx in [hx, -hx]:
 			for wz in [hz, -hz]:
 				wheel_cells.append(Vector3(wx, by, wz))
@@ -151,7 +135,7 @@ func _build_from_design() -> void:
 		$Wheels.add_child(ray)
 
 	if _launchers.is_empty():
-		_launchers.append(Vector3(dim.x * 0.5, dim.y * 0.3, 0))
+		_launchers.append(Vector3(aabb.size.x * 0.5, aabb.size.y * 0.3, 0))
 
 
 func _add_collider(local: Vector3, scale: float) -> void:
@@ -176,21 +160,75 @@ func _add_launcher_mesh(local: Vector3) -> void:
 	_chassis.add_child(mi)
 
 
-func _make_wheel_mesh(ray: RayCast3D) -> MeshInstance3D:
-	var mi := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = wheel_radius
-	cyl.bottom_radius = wheel_radius
-	cyl.height = 0.45
-	cyl.radial_segments = 18
-	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.07, 0.07, 0.09)
-	m.roughness = 0.9
-	cyl.material = m
-	mi.mesh = cyl
-	mi.rotation_degrees = Vector3(90, 0, 0)
-	ray.add_child(mi)
-	return mi
+func _make_wheel_mesh(ray: RayCast3D) -> Node3D:
+	# A realistic-looking wheel: dark rubber tire, a metallic hub with spokes,
+	# and tread blocks around the rim so the rotation is clearly visible when
+	# the car moves. The "spin" node is rotated about the axle each frame.
+	var root := Node3D.new()
+	ray.add_child(root)
+	var spin := Node3D.new()
+	root.add_child(spin)
+
+	var width := 0.42
+	var tire_mat := StandardMaterial3D.new()
+	tire_mat.albedo_color = Color(0.06, 0.06, 0.08)
+	tire_mat.roughness = 0.95
+	var rim_mat := StandardMaterial3D.new()
+	rim_mat.albedo_color = Color(0.78, 0.8, 0.86)
+	rim_mat.metallic = 0.8
+	rim_mat.roughness = 0.3
+
+	# Tire (axle along Z = lateral).
+	var tire := MeshInstance3D.new()
+	var tc := CylinderMesh.new()
+	tc.top_radius = wheel_radius
+	tc.bottom_radius = wheel_radius
+	tc.height = width
+	tc.radial_segments = 20
+	tc.material = tire_mat
+	tire.mesh = tc
+	tire.rotation_degrees = Vector3(90, 0, 0)
+	spin.add_child(tire)
+
+	# Metallic hub poking out both faces.
+	var hub := MeshInstance3D.new()
+	var hcyl := CylinderMesh.new()
+	hcyl.top_radius = wheel_radius * 0.5
+	hcyl.bottom_radius = wheel_radius * 0.5
+	hcyl.height = width + 0.05
+	hcyl.radial_segments = 16
+	hcyl.material = rim_mat
+	hub.mesh = hcyl
+	hub.rotation_degrees = Vector3(90, 0, 0)
+	spin.add_child(hub)
+
+	# Spokes on both outer faces.
+	for i in 5:
+		var ang := TAU * float(i) / 5.0
+		for zside in [width * 0.5, -width * 0.5]:
+			var spoke := MeshInstance3D.new()
+			var sb := BoxMesh.new()
+			sb.size = Vector3(wheel_radius * 0.92, 0.09, 0.05)
+			spoke.mesh = sb
+			spoke.material_override = rim_mat
+			spoke.position = Vector3(cos(ang) * wheel_radius * 0.42, sin(ang) * wheel_radius * 0.42, zside)
+			spoke.rotation = Vector3(0, 0, ang)
+			spin.add_child(spoke)
+
+	# Tread blocks around the circumference (makes rolling obvious).
+	for i in 14:
+		var ang := TAU * float(i) / 14.0
+		var tread := MeshInstance3D.new()
+		var tb := BoxMesh.new()
+		tb.size = Vector3(0.14, 0.16, width * 0.96)
+		tread.mesh = tb
+		tread.material_override = tire_mat
+		tread.position = Vector3(cos(ang) * (wheel_radius - 0.02), sin(ang) * (wheel_radius - 0.02), 0)
+		tread.rotation = Vector3(0, 0, ang)
+		spin.add_child(tread)
+
+	_wheel_spins.append(spin)
+	return root
 
 
 func _setup_dust() -> void:
@@ -412,9 +450,10 @@ func _update_lean(delta: float) -> void:
 
 
 func _spin_wheels(speed: float, delta: float) -> void:
-	var spin := speed * delta / wheel_radius
-	for mesh in _wheel_meshes:
-		mesh.rotate_object_local(Vector3.UP, spin)
+	# Roll about the lateral axle (local Z) so the tread/spokes visibly turn.
+	var amount := speed * delta / wheel_radius
+	for s in _wheel_spins:
+		s.rotate_z(-amount)
 
 
 func _on_body_entered(body: Node) -> void:

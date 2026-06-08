@@ -140,48 +140,28 @@ func _ensure_cars() -> void:
 		cars.append(CarLib.design(1))
 
 
-func _upgrade_design(d: Array) -> Array:
-	# Old designs had no wheel/rocket parts. Give them wheels at the bottom
-	# corners and a rocket on top so they show up and work.
-	var has_wheel := false
-	var has_rocket := false
-	var mny := 99
-	for v in d:
-		var k: String = str(v[4]) if v.size() > 4 else "block"
-		if k == "wheel":
-			has_wheel = true
-		if k == "rocket":
-			has_rocket = true
-		mny = mini(mny, int(v[1]))
-	if has_wheel:
-		return d
+func _is_new_design(d: Array) -> bool:
+	return d.is_empty() or d[0] is Dictionary
 
-	var mnx := 99
-	var mxx := -99
-	var mnz := 99
-	var mxz := -99
-	var maxy := -99
-	for v in d:
-		maxy = maxi(maxy, int(v[1]))
-		if int(v[1]) == mny:
-			mnx = mini(mnx, int(v[0]))
-			mxx = maxi(mxx, int(v[0]))
-			mnz = mini(mnz, int(v[2]))
-			mxz = maxi(mxz, int(v[2]))
-	var corners := {
-		Vector2i(mnx, mnz): true, Vector2i(mxx, mnz): true,
-		Vector2i(mnx, mxz): true, Vector2i(mxx, mxz): true,
-	}
+
+func _migrate_design(d: Array) -> Array:
+	# Convert an old voxel design (list of [x,y,z,"#hex",kind] cells) to the new
+	# LEGO part format. Each old 1x1 cell becomes a 2x2-stud, 3-plate part so the
+	# overall shape is preserved on the finer grid.
+	if _is_new_design(d):
+		return d
 	var out: Array = []
 	for v in d:
-		var k2: String = str(v[4]) if v.size() > 4 else "block"
-		var c2: String = str(v[3]) if v.size() > 3 else "#cccccc"
-		if int(v[1]) == mny and corners.has(Vector2i(int(v[0]), int(v[2]))):
-			out.append([int(v[0]), int(v[1]), int(v[2]), "#161616", "wheel"])
-		else:
-			out.append([int(v[0]), int(v[1]), int(v[2]), c2, k2])
-	if not has_rocket:
-		out.append([int((mnx + mxx) / 2.0), maxy + 1, int((mnz + mxz) / 2.0), "#cfcfcf", "rocket"])
+		if not (v is Array):
+			continue
+		var kind: String = str(v[4]) if v.size() > 4 else "block"
+		var t := "brick"
+		if kind == "wheel":
+			t = "wheel"
+		elif kind == "rocket":
+			t = "rocket"
+		var color: String = str(v[3]) if v.size() > 3 else "#cccccc"
+		out.append(BrickPart.make(t, int(v[0]) * 2, int(v[1]) * 3, int(v[2]) * 2, 2, 2, color))
 	return out
 
 
@@ -270,14 +250,13 @@ func _load_garage() -> void:
 		# Legacy single-design save.
 		cars = [parsed]
 		active_car = 0
-	# Upgrade any wheel-less old designs.
-	var upgraded := false
+	# Migrate any old voxel designs to the new LEGO part format.
+	var changed := false
 	for i in cars.size():
-		var u := _upgrade_design(cars[i])
-		if u.size() != cars[i].size():
-			upgraded = true
-		cars[i] = u
-	if upgraded:
+		if cars[i] is Array and not _is_new_design(cars[i]):
+			cars[i] = _migrate_design(cars[i])
+			changed = true
+	if changed:
 		_save_garage()
 
 
