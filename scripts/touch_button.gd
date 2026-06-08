@@ -7,6 +7,11 @@ extends Control
 var action: String = ""
 var label: String = ""
 var tint: Color = Color(0.95, 0.85, 0.3)
+## Hold actions (fire/jump) drive the action via Input.action_press so a held
+## press persists across physics ticks (needed for is_action_just_pressed jump).
+## Tap actions (interact/pause/enter/back) dispatch an InputEventAction so the
+## event-based handlers (_unhandled_input) react too.
+var hold: bool = false
 
 var _index: int = -1
 var _down: bool = false
@@ -39,11 +44,17 @@ func _set_down(down: bool) -> void:
 		return
 	_down = down
 	if action != "":
-		var ev := InputEventAction.new()
-		ev.action = action
-		ev.pressed = down
-		ev.strength = 1.0 if down else 0.0
-		Input.parse_input_event(ev)
+		if hold:
+			if down:
+				Input.action_press(action, 1.0)
+			else:
+				Input.action_release(action)
+		else:
+			var ev := InputEventAction.new()
+			ev.action = action
+			ev.pressed = down
+			ev.strength = 1.0 if down else 0.0
+			Input.parse_input_event(ev)
 	queue_redraw()
 
 

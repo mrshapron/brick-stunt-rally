@@ -84,6 +84,9 @@ func _ready() -> void:
 	_mute_button.add_theme_font_size_override("font_size", 18)
 	_mute_button.text = _mute_text()
 	_mute_button.pressed.connect(_on_mute_pressed)
+	# On touch the on-screen buttons sit in this corner; use the pause menu's
+	# Sound toggle instead so they don't overlap.
+	_mute_button.visible = not DisplayServer.is_touchscreen_available()
 	add_child(_mute_button)
 
 	_build_complete_panel()
@@ -212,8 +215,10 @@ func show_complete(time: float, best: float, is_best: bool, reward: String = "",
 		lines += "\nNew best!"
 	if earned > 0:
 		lines += "\n\nMoney earned:  +$%d   (total $%d)" % [earned, GameState.money]
+	var touch := DisplayServer.is_touchscreen_available()
 	if reward != "":
-		lines += "\n\nWORLD COMPLETE!  You won the %s!\nPress Enter to see your new car!" % reward
+		lines += "\n\nWORLD COMPLETE!  You won the %s!" % reward
+		lines += "\nTap to see your new car!" if touch else "\nPress Enter to see your new car!"
 	else:
-		lines += "\n\nPress Enter/N to continue   .   R to retry"
+		lines += "\n\nTap the screen to continue" if touch else "\n\nPress Enter/N to continue   .   R to retry"
 	_complete_body.text = lines

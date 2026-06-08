@@ -388,6 +388,9 @@ func add_overlay(title: String, hint: String) -> void:
 	mute.pressed.connect(func() -> void:
 		Sfx.toggle_mute()
 		mute.text = "Sound: Off" if Sfx.is_muted() else "Sound: On")
+	# Hidden on touch (the on-screen buttons use this corner); toggle sound from
+	# the in-level pause menu instead. It's a global setting, so it persists.
+	mute.visible = not DisplayServer.is_touchscreen_available()
 	root.add_child(mute)
 
 

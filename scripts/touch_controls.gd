@@ -44,6 +44,7 @@ func _ready() -> void:
 	root.add_child(_aim)
 
 	_fire = _make_button(root, "fire", "FIRE", Color(0.95, 0.4, 0.3))
+	_fire.hold = true
 	_corner(_fire, -204.0, -204.0, -36.0, -36.0)
 
 	_interact = _make_button(root, "interact", "E", Color(0.45, 0.8, 1.0))

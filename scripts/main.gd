@@ -174,12 +174,27 @@ func _process(_delta: float) -> void:
 	if Input.is_action_just_pressed("restart"):
 		_on_restart()
 	elif finished and Input.is_action_just_pressed("advance"):
-		if _has_reward:
-			_has_reward = false
-			Sfx.stop_engine()
-			transition_to("res://scenes/car_reward.tscn")
-		else:
-			_to_world_map()
+		_continue_after_finish()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# On touch (no keyboard), tapping the screen after a level ends continues
+	# back to the world map / reward, matching the "Tap to continue" prompt.
+	if finished and event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
+		_continue_after_finish()
+		return
+	super(event)
+
+
+func _continue_after_finish() -> void:
+	if not finished:
+		return
+	if _has_reward:
+		_has_reward = false
+		Sfx.stop_engine()
+		transition_to("res://scenes/car_reward.tscn")
+	else:
+		_to_world_map()
 
 
 func _to_world_map() -> void:
@@ -236,7 +251,8 @@ func _finish_race() -> void:
 		running = false
 		Sfx.stop_engine()
 		if hud:
-			hud.show_message("You came %s" % _ordinal(place), "You need 1st place to win!\nPress R to retry   .   M for world map")
+			var race_hint := "You need 1st place to win!\n" + ("Tap the screen to continue" if DisplayServer.is_touchscreen_available() else "Press R to retry   .   M for world map")
+			hud.show_message("You came %s" % _ordinal(place), race_hint)
 
 
 func _win() -> void:
@@ -281,4 +297,5 @@ func _on_player_died() -> void:
 	vehicle.linear_velocity = Vector3.ZERO
 	vehicle.angular_velocity = Vector3.ZERO
 	if hud:
-		hud.show_message("DESTROYED", "Press R to retry   .   M for world map")
+		var dead_hint := "Tap the screen to continue" if DisplayServer.is_touchscreen_available() else "Press R to retry   .   M for world map"
+		hud.show_message("DESTROYED", dead_hint)
