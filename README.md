@@ -1,6 +1,6 @@
 # Brick Stunt Rally 🧱🚗
 
-A little 3D brick-car game I've been building in **Godot 4**. You drive blocky cars
+You drive blocky cars
 through stunt courses, blow stuff up with rockets, build your own vehicles brick by
 brick in a Laboratory, and collect a garage full of cars. It started as a "let me
 try Godot for a weekend" thing and kind of refused to stop growing.
