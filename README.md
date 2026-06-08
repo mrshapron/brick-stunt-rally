@@ -57,6 +57,17 @@ bouncy-castle). I'm pretty proud of where it landed.
 
 ![War Zone in the desert](screenshots/warzone.png)
 
+## Now on iPhone 📱
+
+It also runs on **mobile (iOS)** — built with Godot's Mobile renderer and a full
+set of on-screen touch controls: a draggable analog joystick to drive, a turret
+joystick, and FIRE / E (in-out) / ENTER / BACK buttons. The desktop keyboard
+controls are untouched; the touch UI only appears on a touchscreen.
+
+![Racing on iPhone](screenshots/mobile_race.png)
+
+![World hub on iPhone](screenshots/mobile_hub.png)
+
 ## Controls
 
 | Key | What it does |
