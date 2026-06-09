@@ -7,6 +7,16 @@ const LAB := -10
 const PARK := -11
 # Some worlds sit up on hills (height per world index; 0 = on the ground).
 const HILLS := [0.0, 0.0, 5.0, 0.0, 9.0, 0.0, 4.0]
+# A fun LEGO travel poster per world, shown on a billboard at its portal.
+const POSTERS := [
+	"res://textures/worlds/world_grassland.png",
+	"res://textures/worlds/world_desert.png",
+	"res://textures/worlds/world_neon.png",
+	"res://textures/worlds/world_war.png",
+	"res://textures/worlds/world_mountains.png",
+	"res://textures/worlds/world_speedway.png",
+	"res://textures/worlds/world_safari.png",
+]
 
 var _near := -1
 var _near_gate: Node3D
@@ -61,6 +71,8 @@ func _ready() -> void:
 			str(w.get("name", "World")), sub, "portal")
 		gate.body_entered.connect(_on_near.bind(gate, i))
 		gate.body_exited.connect(_on_far.bind(gate, i))
+		if i < POSTERS.size():
+			_add_world_poster(px, top + 9.5, -66.0, POSTERS[i], color)
 
 	# Laboratory + Parking portals in a front row.
 	var lab_color := Color("#7bd0ff")
@@ -88,6 +100,50 @@ func _ready() -> void:
 	add_camera()
 	add_overlay("WORLD HUB", "Drive into a world portal and hold for 2s to enter (or press Enter)")
 	add_touch_controls("nav")
+
+
+func _add_world_poster(px: float, py: float, pz: float, tex_path: String, accent: Color) -> void:
+	# A framed LEGO travel poster on posts, facing the player as they approach.
+	var holder := Node3D.new()
+	holder.position = Vector3(px, py, pz)
+	add_child(holder)
+
+	var frame := MeshInstance3D.new()
+	var fb := BoxMesh.new()
+	fb.size = Vector3(8.0, 5.4, 0.4)
+	frame.mesh = fb
+	var fm := StandardMaterial3D.new()
+	fm.albedo_color = accent.darkened(0.2)
+	fm.metallic = 0.2
+	frame.material_override = fm
+	holder.add_child(frame)
+
+	var tex: Texture2D = load(tex_path)
+	if tex != null:
+		var q := MeshInstance3D.new()
+		var qm := QuadMesh.new()
+		qm.size = Vector2(7.4, 4.8)
+		q.mesh = qm
+		var m := StandardMaterial3D.new()
+		m.albedo_texture = tex
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.albedo_color = Color(1, 1, 1)
+		q.material_override = m
+		q.position = Vector3(0, 0, 0.22)
+		holder.add_child(q)
+
+	# Two posts down to the ground.
+	var length := maxf(py - 2.7, 1.0)
+	for sx in [-3.4, 3.4]:
+		var post := MeshInstance3D.new()
+		var pb := BoxMesh.new()
+		pb.size = Vector3(0.4, length, 0.4)
+		post.mesh = pb
+		post.position = Vector3(sx, -(2.7 + length * 0.5), 0)
+		var pm := StandardMaterial3D.new()
+		pm.albedo_color = Color(0.22, 0.24, 0.3)
+		post.material_override = pm
+		holder.add_child(post)
 
 
 func _on_near(body: Node, gate: Node3D, world_index: int) -> void:
