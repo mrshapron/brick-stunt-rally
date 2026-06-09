@@ -45,6 +45,8 @@ var health: float = 100.0
 var _fire_timer: float = 0.0
 var _since_hit: float = 999.0
 var _dead: bool = false
+var _body_color: Color = Color("#c43a2a")
+var _last_break_ms: int = 0
 var controlled: bool = true
 var _driver: Node3D
 var _launchers: Array[Vector3] = []
@@ -99,6 +101,8 @@ func _build_from_design() -> void:
 		if t == "wheel":
 			wheel_cells.append(local)
 			continue
+		if t == "brick" or t == "plate" or t == "tile":
+			_body_color = Color(str(rec.get("color", "#c43a2a")))
 		var node := BrickPart.build_part(rec)
 		node.position = local
 		_chassis.add_child(node)
@@ -465,7 +469,20 @@ func _on_body_entered(body: Node) -> void:
 			var dir := Vector3(linear_velocity.x, 0.0, linear_velocity.z).normalized()
 			var impulse := dir * 6.0 + Vector3(0, 4.0, 0)
 			body.call_deferred("apply_central_impulse", impulse)
-	elif body.is_in_group("racer") and body is Node3D and linear_velocity.length() > 5.0:
+
+	# A hard crash into anything solid shakes a few bricks loose (cosmetic) and
+	# costs a little health that regenerates. Rate-limited so it doesn't spam.
+	var hspeed := Vector3(linear_velocity.x, 0.0, linear_velocity.z).length()
+	var solid := body is StaticBody3D or body is RigidBody3D
+	if solid and hspeed > 9.0 and Time.get_ticks_msec() - _last_break_ms > 400:
+		_last_break_ms = Time.get_ticks_msec()
+		var d2 := Vector3(linear_velocity.x, 0.0, linear_velocity.z).normalized()
+		Effects.brick_burst(get_parent(), global_position + d2 * 1.3 + Vector3(0, 0.4, 0), _body_color, 5, -d2 * 2.5)
+		Sfx.play_smash()
+		if not _dead:
+			take_damage(4.0)
+
+	if body.is_in_group("racer") and body is Node3D and linear_velocity.length() > 5.0:
 		# Crash into a rival racer.
 		var p: Vector3 = (global_position + (body as Node3D).global_position) * 0.5 + Vector3(0, 0.6, 0)
 		Effects.explosion(get_parent(), p, 0.7, Color(1.0, 0.8, 0.3))

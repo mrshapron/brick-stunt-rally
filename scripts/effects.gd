@@ -109,6 +109,33 @@ static func damage_number(host: Node, pos: Vector3, amount: float) -> void:
 	tw.finished.connect(l.queue_free)
 
 
+static func brick_burst(host: Node, pos: Vector3, color: Color, count: int = 5, push: Vector3 = Vector3.ZERO) -> void:
+	# Friendly "knocked a few bricks loose" effect: small studded LEGO pieces pop
+	# off and tumble, then clean themselves up. Cosmetic only.
+	if host == null or not host.is_inside_tree():
+		return
+	var n := count
+	if Mobile.is_mobile():
+		n = maxi(2, int(count * 0.6))
+	var sizes := [Vector2i(1, 1), Vector2i(1, 2), Vector2i(2, 1)]
+	for i in n:
+		var s: Vector2i = sizes[randi() % sizes.size()]
+		var rec := BrickPart.make("brick", 0, 0, 0, s.x, s.y, color.to_html(false))
+		var rb := RigidBody3D.new()
+		rb.mass = 0.15
+		rb.add_child(BrickPart.build_part(rec))
+		var cs := CollisionShape3D.new()
+		var bs := BoxShape3D.new()
+		bs.size = Vector3(s.x * BrickPart.STUD, BrickPart.PLATE * 3.0, s.y * BrickPart.STUD)
+		cs.shape = bs
+		rb.add_child(cs)
+		host.add_child(rb)
+		rb.global_position = pos + Vector3(randf_range(-0.3, 0.3), randf_range(0.0, 0.4), randf_range(-0.3, 0.3))
+		rb.apply_central_impulse((push + Vector3(randf_range(-2, 2), randf_range(2.5, 4.5), randf_range(-2, 2))) * rb.mass * 7.0)
+		rb.angular_velocity = Vector3(randf_range(-9, 9), randf_range(-9, 9), randf_range(-9, 9))
+		host.get_tree().create_timer(1.6).timeout.connect(rb.queue_free)
+
+
 static func blast(host: Node3D, pos: Vector3, radius: float, damage: float, force: float) -> void:
 	# Radial explosion: damages enemies and physically flings nearby rigid bodies
 	# (destructible bricks) away, with falloff. Leaves the player's own car alone.
