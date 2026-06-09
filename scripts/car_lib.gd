@@ -78,9 +78,12 @@ static func build_display(design_arr: Array) -> Node3D:
 		var c := BrickPart.center_world(rec)
 		node.position = Vector3(c.x - cx, c.y, c.z - cz)
 		root.add_child(node)
-		if str(rec.get("t", "brick")) == "wheel" and node.get_child_count() > 0:
-			wheels.append(node.get_child(0))
-		min_bottom = minf(min_bottom, node.position.y - BrickPart.part_h(rec) * BrickPart.PLATE * 0.5)
+		var bottom := node.position.y - BrickPart.part_h(rec) * BrickPart.PLATE * 0.5
+		if str(rec.get("t", "brick")) == "wheel":
+			bottom = node.position.y - BrickPart.wheel_radius(rec)
+			if node.get_child_count() > 0:
+				wheels.append(node.get_child(0))
+		min_bottom = minf(min_bottom, bottom)
 
 	if min_bottom < 0.9e9:
 		for child in root.get_children():

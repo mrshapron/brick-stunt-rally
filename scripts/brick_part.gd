@@ -63,6 +63,13 @@ static func cells(rec: Dictionary) -> Array:
 	return out
 
 
+static func wheel_radius(rec: Dictionary) -> float:
+	# Visual radius of a wheel part (matches _wheel()), so callers can sit a car
+	# correctly on its round wheels rather than on the wheel's box height.
+	var diam := maxf(float(rec["size"][0]), float(rec["size"][1])) * STUD
+	return maxf(diam * 0.62, 0.34)
+
+
 static func center_world(rec: Dictionary) -> Vector3:
 	var fp := footprint(rec)
 	var gx: float = float(rec["pos"][0])

@@ -137,7 +137,7 @@ static func blast(host: Node3D, pos: Vector3, radius: float, damage: float, forc
 			continue
 		var d := col.global_position.distance_to(pos)
 		var falloff := clampf(1.0 - d / radius, 0.15, 1.0)
-		if col.is_in_group("enemy") and col.has_method("take_damage"):
+		if (col.is_in_group("enemy") or col.is_in_group("racer")) and col.has_method("take_damage"):
 			col.take_damage(damage * falloff)
 		if col is RigidBody3D:
 			var dir := col.global_position - pos
