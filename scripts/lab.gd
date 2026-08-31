@@ -536,7 +536,9 @@ func _add_button(parent: Node, text: String, cb: Callable) -> void:
 	b.text = text
 	b.custom_minimum_size = Vector2(240, 50)
 	b.add_theme_font_size_override("font_size", 26)
-	b.pressed.connect(cb)
+	b.pressed.connect(func() -> void:
+		Sfx.play_click()
+		cb.call())
 	parent.add_child(b)
 
 

@@ -106,6 +106,18 @@ const WORLDS: Array = [
 	},
 ]
 
+# Aero World: a separate flight campaign (helicopters + airplanes). Each entry
+# is a ring-course level. Progress is stored under progress["sky"].
+const SKY_LEVELS: Array = [
+	{"name": "First Flight", "kind": "plane", "rings": 6, "spread": 30.0, "climb": 6.0},
+	{"name": "Chopper Hops", "kind": "heli", "rings": 6, "spread": 22.0, "climb": 5.0},
+	{"name": "Canyon Dash", "kind": "plane", "rings": 8, "spread": 34.0, "climb": 9.0},
+	{"name": "Rooftop Rescue", "kind": "heli", "rings": 8, "spread": 24.0, "climb": 7.0},
+	{"name": "Cloud Slalom", "kind": "plane", "rings": 10, "spread": 36.0, "climb": 12.0},
+	{"name": "Ace Gauntlet", "kind": "heli", "rings": 10, "spread": 26.0, "climb": 10.0},
+]
+var sky_current: int = 0
+
 var current_world: int = 0
 var current_level: int = 1
 # progress[w][l] = best_time (float). Presence of a key means "completed".
@@ -272,6 +284,52 @@ func get_current_level_data() -> Dictionary:
 	return LevelGen.generate(current_world, current_level, WORLDS[current_world])
 
 
+# --- Aero World (flight) progression ---
+
+func sky_level_count() -> int:
+	return SKY_LEVELS.size()
+
+
+func get_sky_level(index: int) -> Dictionary:
+	return SKY_LEVELS[clampi(index, 0, SKY_LEVELS.size() - 1)]
+
+
+func sky_is_complete(index: int) -> bool:
+	return progress.has("sky") and progress["sky"].has(str(index))
+
+
+func sky_is_unlocked(index: int) -> bool:
+	return index <= 0 or sky_is_complete(index - 1)
+
+
+func sky_best(index: int) -> float:
+	if sky_is_complete(index):
+		return float(progress["sky"][str(index)])
+	return -1.0
+
+
+func record_sky_time(index: int, t: float) -> bool:
+	if not progress.has("sky"):
+		progress["sky"] = {}
+	var key := str(index)
+	var is_best := true
+	if progress["sky"].has(key):
+		if t < float(progress["sky"][key]):
+			progress["sky"][key] = t
+		else:
+			is_best = false
+	else:
+		progress["sky"][key] = t
+	_save()
+	return is_best
+
+
+func sky_levels_completed() -> int:
+	if not progress.has("sky"):
+		return 0
+	return progress["sky"].size()
+
+
 func is_world_unlocked(_w: int) -> bool:
 	# All worlds are reachable from the hub; difficulty rises by world.
 	return true
@@ -357,6 +415,8 @@ func _setup_input() -> void:
 	_add_action("menu", [KEY_ESCAPE, KEY_M])
 	_add_action("pause", [KEY_ESCAPE])
 	_add_action("advance", [KEY_N, KEY_ENTER])
+	# Flip to the next radio station (GTA-style), anytime, in any scene.
+	_add_action("radio", [KEY_TAB])
 
 
 func _add_action(action: String, keys: Array) -> void:

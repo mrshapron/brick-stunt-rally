@@ -14,6 +14,8 @@ var spawn_point: Vector3 = Vector3(0, 4, 0)
 var last_checkpoint: Vector3 = Vector3(0, 4, 0)
 var combat: bool = false
 var enemies_alive: int = 0
+var _waves: Array = []
+var _wave_idx: int = 0
 var race: bool = false
 var _bots: Array = []
 var _track: RaceTrack
@@ -49,12 +51,13 @@ func _ready() -> void:
 
 	combat = data.get("combat", false)
 	if combat:
-		_spawn_enemies(data.get("enemies", []))
+		_start_combat(data)
 
 	race = data.get("race", false)
 	if race:
 		_setup_race(data)
 
+	Sfx.play_level_start()
 	Sfx.start_engine()
 	running = true
 
@@ -113,6 +116,27 @@ func _ordinal(n: int) -> String:
 		_: return "%dth" % n
 
 
+func _start_combat(data: Dictionary) -> void:
+	# Battlefield extras first, then the first enemy wave.
+	for b in data.get("barrels", []):
+		var barrel := Barrel.new()
+		add_child(barrel)
+		barrel.global_position = _v3(b)
+	for p in data.get("pickups", []):
+		var pickup := Pickup.new()
+		pickup.configure(str(p.get("kind", "health")))
+		add_child(pickup)
+		pickup.global_position = _v3(p.get("pos", [0, 1.4, 0]))
+
+	_waves = data.get("waves", [])
+	if _waves.is_empty():
+		_waves = [data.get("enemies", [])]
+	_wave_idx = 0
+	_spawn_enemies(_waves[0])
+	if _waves.size() > 1 and hud:
+		hud.flash_center("WAVE 1 / %d" % _waves.size())
+
+
 func _spawn_enemies(list: Array) -> void:
 	for e in list:
 		var enemy := Enemy.new()
@@ -122,6 +146,25 @@ func _spawn_enemies(list: Array) -> void:
 		enemy.died.connect(_on_enemy_died)
 		enemies_alive += 1
 	hud.set_combat(enemies_alive)
+
+
+func _next_wave() -> void:
+	_wave_idx += 1
+	if _wave_idx >= _waves.size():
+		return
+	var wave: Array = _waves[_wave_idx]
+	Sfx.play_checkpoint()
+	if hud:
+		var tag := "WAVE %d / %d" % [_wave_idx + 1, _waves.size()]
+		for e in wave:
+			if str(e.get("type", "")) == "boss":
+				tag = "!!  BOSS INCOMING  !!"
+				break
+		hud.flash_center(tag)
+	# Dramatic drop-in: a puff of smoke where each enemy lands.
+	for e in wave:
+		Effects.explosion(self, _v3(e.get("pos", [0, 1.5, 0])), 0.7, Color(0.7, 0.5, 0.3))
+	_spawn_enemies(wave)
 
 
 func _v3(a: Variant) -> Vector3:
@@ -277,7 +320,11 @@ func _on_enemy_died() -> void:
 	if hud:
 		hud.set_enemies(enemies_alive)
 	if enemies_alive == 0 and combat and not finished:
-		_win()
+		if _wave_idx < _waves.size() - 1:
+			# Brief breather, then the next wave storms in.
+			get_tree().create_timer(1.6).timeout.connect(_next_wave)
+		else:
+			_win()
 
 
 func _on_player_damaged(ratio: float) -> void:

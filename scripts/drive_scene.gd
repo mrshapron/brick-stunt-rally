@@ -386,6 +386,7 @@ func add_overlay(title: String, hint: String) -> void:
 	mute.add_theme_font_size_override("font_size", 18)
 	mute.text = "Sound: Off" if Sfx.is_muted() else "Sound: On"
 	mute.pressed.connect(func() -> void:
+		Sfx.play_click()
 		Sfx.toggle_mute()
 		mute.text = "Sound: Off" if Sfx.is_muted() else "Sound: On")
 	# Hidden on touch (the on-screen buttons use this corner); toggle sound from

@@ -97,6 +97,7 @@ func _mute_text() -> String:
 
 
 func _on_mute_pressed() -> void:
+	Sfx.play_click()
 	Sfx.toggle_mute()
 	_mute_button.text = _mute_text()
 
@@ -202,9 +203,20 @@ func show_message(title: String, body: String) -> void:
 
 
 func flash_flip() -> void:
+	_flip_flash.text = "FLIP!"
+	_flip_flash.modulate = Color(1.0, 0.85, 0.2)
 	_flip_flash.visible = true
 	_flip_flash.modulate.a = 1.0
 	_flash_timer = 0.8
+
+
+func flash_center(text: String) -> void:
+	# Big transient banner in the same spot as the flip flash (wave starts etc.).
+	_flip_flash.text = text
+	_flip_flash.modulate = Color(1.0, 0.4, 0.25)
+	_flip_flash.visible = true
+	_flip_flash.modulate.a = 1.0
+	_flash_timer = 2.0
 
 
 func show_complete(time: float, best: float, is_best: bool, reward: String = "", earned: int = 0) -> void:

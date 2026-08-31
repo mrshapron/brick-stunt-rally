@@ -100,14 +100,16 @@ func set_mode(mode: String) -> void:
 	var car := mode == "car"
 	var foot := mode == "foot"
 	var nav := mode == "nav"
+	var navp := mode == "navp"
+	var fly := mode == "fly"
 	_set_vis(_aim, car)
-	_set_vis(_fire, car or foot)
-	_set_vis(_interact, true)
-	_set_vis(_pause, car or foot)
-	_set_vis(_enter, nav)
-	_set_vis(_back, nav)
+	_set_vis(_fire, car or foot or fly)
+	_set_vis(_interact, not fly)
+	_set_vis(_pause, car or foot or fly or navp)
+	_set_vis(_enter, nav or navp)
+	_set_vis(_back, nav or fly)
 	if _fire:
-		_fire.label = "FIRE" if car else "JUMP"
+		_fire.label = "FIRE" if car else ("BOOST" if fly else "JUMP")
 		_fire.queue_redraw()
 
 

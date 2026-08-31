@@ -41,6 +41,7 @@ var _boost_timer: float = 0.0
 var _dust: CPUParticles3D
 var _chassis: Node3D
 var _prev_vel: Vector3 = Vector3.ZERO
+var _prev_move_dir: Vector3 = Vector3.ZERO
 var health: float = 100.0
 var _fire_timer: float = 0.0
 var _since_hit: float = 999.0
@@ -95,11 +96,15 @@ func _build_from_design() -> void:
 	$CollisionShape3D.queue_free()
 
 	var wheel_cells: Array[Vector3] = []
+	var wheel_r_sum := 0.0
+	var wheel_r_n := 0
 	for rec in design:
 		var t := str(rec.get("t", "brick"))
 		var local := BrickPart.center_world(rec) - center
 		if t == "wheel":
 			wheel_cells.append(local)
+			wheel_r_sum += BrickPart.wheel_radius(rec)
+			wheel_r_n += 1
 			continue
 		if t == "brick" or t == "plate" or t == "tile":
 			_body_color = Color(str(rec.get("color", "#c43a2a")))
@@ -123,6 +128,11 @@ func _build_from_design() -> void:
 	_driver = Minifig.build(0.7)
 	_driver.position = Vector3(0, aabb.size.y * 0.5 - 0.7, -0.1)
 	_chassis.add_child(_driver)
+
+	# Match the driven wheel size to the design (so jeeps/monsters ride on big
+	# wheels), clamped to a stable range.
+	if wheel_r_n > 0:
+		wheel_radius = clampf(wheel_r_sum / float(wheel_r_n), 0.34, 0.6)
 
 	# Wheels: use placed wheel parts if any, else auto 4 corners.
 	if wheel_cells.is_empty():
@@ -173,7 +183,7 @@ func _make_wheel_mesh(ray: RayCast3D) -> Node3D:
 	var spin := Node3D.new()
 	root.add_child(spin)
 
-	var width := 0.42
+	var width := maxf(wheel_radius * 0.85, 0.32)
 	var tire_mat := StandardMaterial3D.new()
 	tire_mat.albedo_color = Color(0.06, 0.06, 0.08)
 	tire_mat.roughness = 0.95
@@ -326,6 +336,15 @@ func _physics_process(delta: float) -> void:
 		var corr := up.cross(Vector3.UP)
 		apply_torque(corr * 8.0 * mass)
 
+	# Soft tire-scrub cue when sharply changing heading (or reversing).
+	if controlled and _grounded and move.length() > 0.3:
+		if _prev_move_dir.length() > 0.3 and hvel.length() > 5.0:
+			if _prev_move_dir.angle_to(move) > 1.4:
+				Sfx.play_turn()
+		_prev_move_dir = move
+	elif move.length() <= 0.3:
+		_prev_move_dir = Vector3.ZERO
+
 	_spin_wheels(hvel.length(), delta)
 
 	if _boost_timer > 0.0:
@@ -421,6 +440,13 @@ func take_damage(d: float) -> void:
 	if health <= 0.0:
 		_dead = true
 		died.emit()
+
+
+func heal(amount: float) -> void:
+	if _dead:
+		return
+	health = minf(max_health, health + amount)
+	damaged.emit(health / max_health)
 
 
 func get_health_ratio() -> float:

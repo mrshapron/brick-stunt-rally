@@ -24,6 +24,9 @@ var _cd: float = 0.0
 var _player: Node3D
 var _hpbar: HPBar
 var _dead: bool = false
+var _stuck: float = 0.0
+var _lap_base: float = 0.0
+var _last_near: float = 0.0
 
 
 func configure(track: RaceTrack, spd: float, car_index: int, lane: float, can_shoot: bool, start_s: float = 0.0) -> void:
@@ -68,6 +71,10 @@ func configure(track: RaceTrack, spd: float, car_index: int, lane: float, can_sh
 	var w: Vector2 = sp + _track.perp(d0) * _lane
 	global_position = Vector3(w.x, 0.6, w.y)
 	rotation = Vector3(0, atan2(-d0.y, d0.x), 0)
+	# Track lap-aware progress from our real position (not a timer), so a car
+	# that gets shoved off keeps an honest place in the race.
+	_last_near = _track.nearest_s(Vector2(w.x, w.y))
+	_lap_base = _s - _last_near
 
 
 func progress() -> float:
@@ -101,24 +108,46 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if _track == null or _dead:
 		return
-	if not finished:
-		_s += speed * delta
 
 	var hv := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
+	var spd := hv.length()
+	var pos2 := Vector2(global_position.x, global_position.z)
+
+	# Read our true position on the track, lap-aware (handles closed-loop wrap).
+	var near: float = _track.nearest_s(pos2)
+	if _track.closed:
+		var dd := near - _last_near
+		if dd < -_track.length * 0.5:
+			_lap_base += _track.length
+		elif dd > _track.length * 0.5:
+			_lap_base -= _track.length
+	_last_near = near
+	_s = _lap_base + near
 
 	if not finished:
-		# Seek a point a little ahead on the track at our lane offset, steering
-		# toward it with force so collisions can shove us off and we recover.
-		var aim_s := _s + LOOKAHEAD
+		# Stuck = grinding against a wall: low speed for a moment.
+		_stuck = _stuck + delta if spd < 2.0 else 0.0
+
+		# Aim a fixed distance ahead of where we ACTUALLY are, so the target can
+		# never run away from us. Keep the lane inside the road, and when stuck
+		# steer to the centre and look further ahead to peel off the edge.
+		var max_lane := maxf(_track.width * 0.5 - 3.0, 0.0)
+		var lane := clampf(_lane + sin(_s * 0.05 + _wobble) * 0.4, -max_lane, max_lane)
+		var look := LOOKAHEAD
+		if _stuck > 0.6:
+			lane = 0.0
+			look = LOOKAHEAD + 4.0
+		var aim_s := near + look
 		var tp: Vector2 = _track.sample_pos(aim_s)
 		var perp: Vector2 = _track.perp(_track.sample_dir(aim_s))
-		var lane := _lane + sin(_s * 0.05 + _wobble) * 0.5
 		var target: Vector2 = tp + perp * lane
 		var to := Vector3(target.x - global_position.x, 0.0, target.y - global_position.z)
 		var desired := to.normalized() * speed if to.length() > 0.2 else Vector3.ZERO
-		apply_central_force((desired - hv) * ACCEL * mass)
+		var force_mul := ACCEL * 1.9 if _stuck > 0.6 else ACCEL
+		apply_central_force((desired - hv) * force_mul * mass)
 
-		var head := hv if hv.length() > 1.5 else to
+		# Face our travel direction, or steer toward the target when slow/stuck.
+		var head := hv if (spd > 1.5 and _stuck <= 0.6) else to
 		if head.length() > 0.1:
 			var ty := atan2(-head.z, head.x)
 			var dy := wrapf(ty - rotation.y, -PI, PI)
@@ -126,7 +155,6 @@ func _physics_process(delta: float) -> void:
 	else:
 		apply_central_force(-hv * 2.0 * mass)
 
-	var spd := hv.length()
 	for wheel in _wheels:
 		wheel.rotate_z(-spd * delta / 0.34)
 

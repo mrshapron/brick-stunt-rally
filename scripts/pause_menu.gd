@@ -7,9 +7,15 @@ extends CanvasLayer
 signal restart_requested
 signal map_requested
 
+## Set these before adding the menu to the tree to tailor it per scene (e.g. the
+## hub has no level to restart or world map to return to).
+var allow_restart: bool = true
+var allow_map: bool = true
+
 var _is_open: bool = false
 var _root: Control
 var _mute_button: Button
+var _radio_button: Button
 
 
 func _ready() -> void:
@@ -58,8 +64,11 @@ func _build() -> void:
 	vb.add_child(title)
 
 	_add_button(vb, "Resume", _on_resume)
-	_add_button(vb, "Restart", _on_restart)
-	_add_button(vb, "World Map", _on_map)
+	if allow_restart:
+		_add_button(vb, "Restart", _on_restart)
+	if allow_map:
+		_add_button(vb, "World Map", _on_map)
+	_radio_button = _add_button(vb, _radio_text(), _on_radio)
 	_mute_button = _add_button(vb, _mute_text(), _on_mute)
 	_add_button(vb, "Quit Game", _on_quit)
 
@@ -69,13 +78,24 @@ func _add_button(parent: Node, text: String, cb: Callable) -> Button:
 	b.text = text
 	b.custom_minimum_size = Vector2(280, 52)
 	b.add_theme_font_size_override("font_size", 26)
-	b.pressed.connect(cb)
+	b.pressed.connect(func() -> void:
+		Sfx.play_click()
+		cb.call())
 	parent.add_child(b)
 	return b
 
 
 func _mute_text() -> String:
 	return "Sound: Off" if Sfx.is_muted() else "Sound: On"
+
+
+func _radio_text() -> String:
+	return "Radio: %s" % Sfx.radio_name()
+
+
+func _on_radio() -> void:
+	Sfx.radio_next()
+	_radio_button.text = _radio_text()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -95,6 +115,7 @@ func open() -> void:
 	_is_open = true
 	visible = true
 	_mute_button.text = _mute_text()
+	_radio_button.text = _radio_text()
 	get_tree().paused = true
 
 

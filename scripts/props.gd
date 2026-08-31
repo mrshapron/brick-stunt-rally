@@ -21,6 +21,8 @@ static func build(p: Dictionary) -> Node3D:
 			node = PropSpinner.new()
 		"faller":
 			node = PropFaller.new()
+		"mortar":
+			node = PropMortar.new()
 		_:
 			return null
 	node.position = _v3(p.get("pos", [0, 0, 0]))

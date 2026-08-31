@@ -369,49 +369,123 @@ static func _stack_at(cx: float, cz: float, base_y: float, height: int, colors: 
 
 
 static func _generate_combat(world: int, level: int, theme: Dictionary) -> Dictionary:
+	# A real battlefield: ruined buildings and sandbag lines for cover, watch-
+	# towers with turrets on top, craters and tank traps, explosive barrels for
+	# chain reactions, health/money pickups, artillery raining down on the later
+	# missions, and enemies attacking in WAVES (with a boss on missions 5 + 10).
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 700 + level * 131
 
 	var ground: String = theme.get("ground", "#5a5648")
 	var accent: String = theme.get("accent", "#ff7b29")
 	var brick_cols: Array = theme.get("bricks", ["#8a3b2a", "#6b6450", "#caa040"])
-	var half := 60.0
+	var half := 64.0
 
 	var bricks: Array = []
 	bricks.append({"size": [half * 2.0, 3, half * 2.0], "pos": [0, -1.5, 0], "color": ground, "kind": "static"})
 
-	# Cover blocks scattered around the arena (not near the player's spawn).
-	var cover := 6 + level
-	for i in cover:
-		var cx := rng.randf_range(-half + 8.0, half - 8.0)
-		var cz := rng.randf_range(-half + 8.0, half - 25.0)
-		var ch := rng.randf_range(2.0, 4.0)
+	# -- Scorched craters (sunken dark discs; purely visual flavour). --
+	for i in 6 + level:
+		var kx := rng.randf_range(-half + 6.0, half - 6.0)
+		var kz := rng.randf_range(-half + 6.0, half - 18.0)
 		bricks.append({
-			"size": [rng.randf_range(3.0, 6.0), ch, rng.randf_range(3.0, 6.0)],
-			"pos": [cx, ch * 0.5 - 0.05, cz],
-			"color": brick_cols[rng.randi() % brick_cols.size()],
-			"kind": "static",
+			"size": [rng.randf_range(3.0, 5.5), 0.25, rng.randf_range(3.0, 5.5)],
+			"pos": [kx, 0.07, kz],
+			"color": "#2c2a24", "kind": "static", "studs": false,
 		})
 
-	# Enemies: count and toughness rise with the level; tougher types appear later.
-	var enemies: Array = []
-	var count := 3 + level
+	# -- Ruined buildings: broken L-shaped wall pairs you can duck behind. --
+	var ruins := 3 + int(level / 2)
+	for i in ruins:
+		var bx := rng.randf_range(-half + 12.0, half - 12.0)
+		var bz := rng.randf_range(-half + 12.0, half - 30.0)
+		var wall_h := rng.randf_range(3.0, 5.5)
+		var wall_len := rng.randf_range(7.0, 11.0)
+		var wcol: String = brick_cols[rng.randi() % brick_cols.size()]
+		bricks.append({"size": [wall_len, wall_h, 1.2], "pos": [bx, wall_h * 0.5 - 0.05, bz], "color": wcol, "kind": "static"})
+		bricks.append({"size": [1.2, wall_h * 0.7, wall_len * 0.6], "pos": [bx + wall_len * 0.5 - 0.6, wall_h * 0.35 - 0.05, bz + wall_len * 0.3], "color": wcol, "kind": "static"})
+		# Crumbled rubble at the broken end (destructible - smash through!).
+		for r in 3:
+			bricks.append({
+				"size": [1.6, 1.4, 1.8],
+				"pos": [bx - wall_len * 0.5 + rng.randf_range(-1.5, 1.5), 0.65 + float(r) * 0.5, bz + rng.randf_range(-2.0, 2.0)],
+				"color": wcol, "kind": "destructible",
+			})
+
+	# -- Sandbag lines (low cover, arcing around the middle). --
+	for i in 4 + int(level / 3):
+		var sx := rng.randf_range(-half + 14.0, half - 14.0)
+		var sz := rng.randf_range(-half + 20.0, half - 26.0)
+		var s_len := rng.randf_range(6.0, 10.0)
+		var yaw := rng.randf_range(-40.0, 40.0)
+		bricks.append({"size": [s_len, 1.3, 1.6], "pos": [sx, 0.6, sz], "color": "#a89a6a", "kind": "static", "yaw": yaw, "studs": false})
+
+	# -- Watchtowers: tall legs + a platform with a turret on top. --
+	var towers := mini(1 + int(level / 3), 3)
+	var tower_turrets: Array = []
+	for i in towers:
+		var tx := rng.randf_range(-half + 16.0, half - 16.0)
+		var tz := rng.randf_range(-half + 16.0, -6.0)
+		var th := 7.0
+		bricks.append({"size": [1.2, th, 1.2], "pos": [tx - 2.0, th * 0.5, tz - 2.0], "color": "#5b4630", "kind": "static", "studs": false})
+		bricks.append({"size": [1.2, th, 1.2], "pos": [tx + 2.0, th * 0.5, tz - 2.0], "color": "#5b4630", "kind": "static", "studs": false})
+		bricks.append({"size": [1.2, th, 1.2], "pos": [tx - 2.0, th * 0.5, tz + 2.0], "color": "#5b4630", "kind": "static", "studs": false})
+		bricks.append({"size": [1.2, th, 1.2], "pos": [tx + 2.0, th * 0.5, tz + 2.0], "color": "#5b4630", "kind": "static", "studs": false})
+		bricks.append({"size": [6.0, 0.8, 6.0], "pos": [tx, th + 0.4, tz], "color": "#6b6450", "kind": "static"})
+		tower_turrets.append([tx, th + 0.8, tz])
+
+	# -- Tank traps (X-shaped hedgehogs) dotting no-man's land. --
+	for i in 5 + level:
+		var hx := rng.randf_range(-half + 8.0, half - 8.0)
+		var hz := rng.randf_range(-half + 14.0, half - 22.0)
+		bricks.append({"size": [3.2, 0.7, 0.7], "pos": [hx, 1.0, hz], "color": "#43413a", "kind": "static", "rot": 45.0, "studs": false})
+		bricks.append({"size": [3.2, 0.7, 0.7], "pos": [hx, 1.0, hz], "color": "#43413a", "kind": "static", "rot": -45.0, "studs": false})
+
+	# -- Explosive barrels: near cover so firefights turn into fireworks. --
+	var barrels: Array = []
+	for i in 6 + level:
+		barrels.append([rng.randf_range(-half + 8.0, half - 8.0), 0.0, rng.randf_range(-half + 8.0, half - 20.0)])
+
+	# -- Pickups: a couple of health crates + money around the field. --
+	var pickups: Array = []
+	for i in 2 + int(level / 3):
+		pickups.append({"kind": "health", "pos": [rng.randf_range(-half + 10.0, half - 10.0), 1.4, rng.randf_range(-half + 10.0, half - 16.0)]})
+	for i in 3:
+		pickups.append({"kind": "money", "pos": [rng.randf_range(-half + 10.0, half - 10.0), 1.4, rng.randf_range(-half + 10.0, half - 16.0)]})
+
+	# -- Enemy WAVES: difficulty and tougher types ramp up wave by wave. --
 	var hp_mult := 1.0 + float(level) * 0.12
-	for i in count:
-		var roll := rng.randf()
-		var etype := "drone"
-		if level >= 4 and roll < 0.35:
-			etype = "tank"
-		elif roll < 0.65:
-			etype = "turret"
-		var ex := rng.randf_range(-half + 10.0, half - 10.0)
-		var ez := rng.randf_range(-half + 10.0, half - 35.0)
-		enemies.append({"type": etype, "pos": [ex, 1.5, ez], "hp_mult": hp_mult})
+	var wave_count := 2 if level < 4 else 3
+	var per_wave := 2 + int(ceil(float(level) * 0.7))
+	var waves: Array = []
+	for w in wave_count:
+		var wave: Array = []
+		# Watchtower turrets join the first wave (snipers on the platforms).
+		if w == 0:
+			for tp in tower_turrets:
+				wave.append({"type": "turret", "pos": [tp[0], tp[1], tp[2]], "hp_mult": hp_mult})
+		for i in per_wave:
+			var roll := rng.randf()
+			var etype := "drone"
+			if level >= 4 and roll < 0.2 + float(w) * 0.12:
+				etype = "tank"
+			elif roll < 0.55:
+				etype = "turret"
+			var ex := rng.randf_range(-half + 10.0, half - 10.0)
+			var ez := rng.randf_range(-half + 10.0, half - 35.0)
+			wave.append({"type": etype, "pos": [ex, 1.5, ez], "hp_mult": hp_mult})
+		waves.append(wave)
+	# Boss missions: the final wave is led by a giant war machine.
+	if level == 5 or level == 10:
+		waves[waves.size() - 1].append({"type": "boss", "pos": [0, 1.5, -half + 18.0], "hp_mult": 1.0 + float(level) * 0.06})
 
 	var props: Array = [
 		_engine(-half + 6.0, -half + 6.0, accent),
 		_engine(half - 6.0, -half + 6.0, brick_cols[0]),
 	]
+	# Artillery barrages on later missions - keep moving, soldier!
+	if level >= 3:
+		props.append({"type": "mortar", "pos": [0, 0, 0], "interval": lerpf(5.5, 3.0, float(level) / 10.0), "damage": 20.0, "radius": 6.0})
 
 	return {
 		"name": "%s  -  Mission %d" % [theme.get("name", "War"), level],
@@ -420,7 +494,9 @@ static func _generate_combat(world: int, level: int, theme: Dictionary) -> Dicti
 		"loops": [],
 		"props": props,
 		"checkpoints": [],
-		"enemies": enemies,
+		"waves": waves,
+		"barrels": barrels,
+		"pickups": pickups,
 		"combat": true,
 		"sky_top": theme.get("sky_top", "#7a3a24"),
 		"sky_horizon": theme.get("sky_horizon", "#caa089"),

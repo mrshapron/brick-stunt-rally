@@ -77,9 +77,13 @@ controls are untouched; the touch UI only appears on a touchscreen.
 | E | Get out of / into the car |
 | Enter | Skip the portal charge-up / continue after a level |
 | R | Restart the level |
+| Tab | Change radio station (music) |
 | M / Esc | Back out (level → world map → hub) |
 
-There's a **Sound** toggle in the top-right of every screen (it starts muted).
+There's a **Sound** toggle in the top-right of every screen (sound is on by default).
+The music is a **GTA-style radio** — flip stations with **Tab** anytime, or from the
+pause menu's *Radio* button. Stations: Chill Waves, Synthwave, Chiptune, Lo-Fi Drive,
+and Radio Off.
 
 ## Installation
 

@@ -1,9 +1,11 @@
 class_name Enemy
 extends CharacterBody3D
-## Three enemy types:
+## Enemy types:
 ##  - drone:  fast, low HP, rams the player (no gun)
 ##  - tank:   slow, high HP, chases and shoots
 ##  - turret: stationary, medium HP, shoots
+##  - boss:   huge war machine - slow, tons of HP, aimed shots plus periodic
+##            360-degree shell bursts you must weave between
 ## Each has a floating HP bar and explodes on death.
 
 signal died
@@ -20,6 +22,7 @@ var _player: Node3D
 var _bar: HPBar
 var _mat: StandardMaterial3D
 var _cd: float = 0.0
+var _burst_cd: float = 5.0
 var _flash: float = 0.0
 var _y: float = 1.5
 var _dead: bool = false
@@ -45,6 +48,13 @@ func configure(p: Dictionary) -> void:
 			shot_damage = 11.0
 			color = Color(0.54, 0.56, 0.62)
 			size = Vector3(2.4, 2.2, 2.4)
+		"boss":
+			max_hp = 320.0
+			speed = 3.0
+			fire_rate = 1.6
+			shot_damage = 13.0
+			color = Color(0.3, 0.32, 0.26)
+			size = Vector3(6.0, 3.2, 5.0)
 		_:
 			type = "drone"
 			max_hp = 22.0
@@ -90,6 +100,39 @@ func _build(size: Vector3, color: Color) -> void:
 	top.material_override = tm
 	add_child(top)
 
+	if type == "boss":
+		# Menacing extras: armored top turret, twin barrels and a glowing core.
+		var turret := MeshInstance3D.new()
+		var trb := BoxMesh.new()
+		trb.size = Vector3(2.6, 1.4, 2.2)
+		turret.mesh = trb
+		turret.position = Vector3(0, size.y + 0.7, 0)
+		turret.material_override = _mat
+		add_child(turret)
+		for bz in [-0.5, 0.5]:
+			var barrel_mi := MeshInstance3D.new()
+			var bbm := BoxMesh.new()
+			bbm.size = Vector3(3.0, 0.4, 0.4)
+			barrel_mi.mesh = bbm
+			barrel_mi.position = Vector3(2.4, size.y + 0.7, bz)
+			var bmat := StandardMaterial3D.new()
+			bmat.albedo_color = Color(0.1, 0.1, 0.12)
+			barrel_mi.material_override = bmat
+			add_child(barrel_mi)
+		var core := MeshInstance3D.new()
+		var cbm := BoxMesh.new()
+		cbm.size = Vector3(1.2, 1.2, 1.2)
+		core.mesh = cbm
+		core.position = Vector3(0, size.y * 0.5, 0)
+		core.rotation_degrees = Vector3(45, 0, 45)
+		var cmat := StandardMaterial3D.new()
+		cmat.albedo_color = Color(1.0, 0.25, 0.1)
+		cmat.emission_enabled = true
+		cmat.emission = Color(1.0, 0.25, 0.1)
+		cmat.emission_energy_multiplier = 2.0
+		core.material_override = cmat
+		add_child(core)
+
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
 	bs.size = size
@@ -127,6 +170,18 @@ func _physics_process(delta: float) -> void:
 		if dist > 12.0:
 			global_position += dir * speed * delta
 		_try_fire(delta, dir)
+	elif type == "boss":
+		if dist > 16.0:
+			global_position += dir * speed * delta
+		_try_fire(delta, dir)
+		# Periodic 360-degree shell burst: a ring of shots to weave between.
+		_burst_cd -= delta
+		if _burst_cd <= 0.0:
+			_burst_cd = 4.5
+			for k in 10:
+				var a := TAU * float(k) / 10.0
+				_spawn_shot(Vector3(cos(a), 0, sin(a)), shot_damage * 0.8, 14.0)
+			Sfx.play_explosion()
 	else:
 		_try_fire(delta, dir)
 
@@ -143,11 +198,15 @@ func _try_fire(delta: float, dir: Vector3) -> void:
 	_cd -= delta
 	if _cd <= 0.0:
 		_cd = fire_rate
-		var s := EnemyShot.new()
-		s.setup(dir, shot_damage)
-		s.position = global_position + Vector3(0, 1.6, 0) + dir * 2.2
-		get_tree().current_scene.add_child(s)
+		_spawn_shot(dir, shot_damage, 24.0)
 		Sfx.play_shoot()
+
+
+func _spawn_shot(dir: Vector3, dmg: float, speed_v: float) -> void:
+	var s := EnemyShot.new()
+	s.setup(dir, dmg, speed_v)
+	s.position = global_position + Vector3(0, 1.6, 0) + dir * (3.2 if type == "boss" else 2.2)
+	get_tree().current_scene.add_child(s)
 
 
 func take_damage(d: float) -> void:
@@ -165,6 +224,7 @@ func die() -> void:
 	if _dead:
 		return
 	_dead = true
-	Effects.explosion(get_parent(), global_position + Vector3(0, 1, 0), 1.4, Color(1.0, 0.55, 0.12))
+	var boom := 3.0 if type == "boss" else 1.4
+	Effects.explosion(get_parent(), global_position + Vector3(0, 1, 0), boom, Color(1.0, 0.55, 0.12))
 	died.emit()
 	queue_free()

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b1stuntskyhub1"]
+
+[ext_resource type="Script" path="res://scripts/sky_hub.gd" id="1_skyhub"]
+
+[node name="SkyHub" type="Node3D"]
+script = ExtResource("1_skyhub")
